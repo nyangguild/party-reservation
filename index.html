@@ -200,8 +200,7 @@
 
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
     import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-    import { getFirestore, doc, getDoc, setDoc, onSnapshot, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-    import { getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot, runTransaction, getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -250,16 +249,16 @@
     // 로컬 저장 닉
     nickEl.value = localStorage.getItem('party_nick') || '';
 
-    // 유틸 (KST 기준 날짜 도우미)
+    // ---------- 유틸 (KST 기준 날짜) ----------
     const pad2 = n => String(n).padStart(2,'0');
     const kstFmt = new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit' });
-    const kstYMD = (date = new Date()) => kstFmt.format(date);
-    const dateFromYMD = (ymd) => { const [y,m,d] = (ymd||'').split('-').map(Number); return new Date(y||1970, (m||1)-1, d||1); };
+    const kstYMD = (date=new Date()) => kstFmt.format(date);
+    const dateFromYMD = (ymd)=>{ const [y,m,d] = (ymd||'').split('-').map(Number); return new Date(y||1970, (m||1)-1, d||1); };
     function todayInKST(){ return dateFromYMD(kstYMD()); }
     function mondayOf(date){ const d = new Date(date); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); d.setHours(0,0,0,0); return d; }
     function weekIdFromDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 
-    // 초기 주간 (대한민국 시간 기준)
+    // ---------- 초기 주간 (대한민국 시간 기준) ----------
     const TODAY_KST = todayInKST();
     const defMon = mondayOf(TODAY_KST);
     weekStartEl.value = kstYMD(defMon);
@@ -314,7 +313,7 @@
     dungeonEl.addEventListener('change', refreshDiffs);
     refreshDungeons();
 
-    // 주간 범위로 파티 생성 날짜 제한
+    // ---------- 주간 범위로 파티 생성 날짜 제한 ----------
     function syncEventDateRange(){
       const min = new Date(CURRENT_WEEK_MON);
       const max = new Date(CURRENT_WEEK_MON);
@@ -334,7 +333,7 @@
       const nick=(nickEl.value||'').trim(); if(!nick){ alert('닉네임을 먼저 저장하세요.'); return; }
       const sel = new Date(eventDateEl.value); sel.setHours(0,0,0,0);
       const dIdx = Math.floor((sel - CURRENT_WEEK_MON)/86400000);
-      if(dIdx<0 || dIdx>6){ alert('선택한 날짜가 현재 주간(월~일) 범위를 벗어났습니다. 상단 "해당 주 보기"로 주간을 먼저 맞춰주세요.'); return; }
+      if(dIdx<0 || dIdx>6){ alert('선택한 날짜가 현재 주간(월~일) 범위를 벗어났습니다. 상단 ' + '해당 주 보기' + '로 주간을 먼저 맞춰주세요.'); return; }
       const time = eventTimeEl.value || '20:00';
       const cat = catEl.value; const dg = dungeonEl.value; const diff = eventDiffEl.value; const cap = CAP(dg);
       const sid = `${dIdx}-${time}`;
@@ -348,16 +347,8 @@
         // 동시간대 중복 방지
         for(const e of events){ e.members = (e.members||[]).filter(m=>m.uid!==CURRENT_USER.uid); }
         const id = 'e'+Date.now()+Math.random().toString(36).slice(2,7);
-        events.push({
-          id, cat, dg, diff, cap,
-          title: `${nick}의 파티`,
-          hostUid: CURRENT_USER.uid,
-          hostNick: nick,
-          members:[{uid:CURRENT_USER.uid, nick}],
-          createdAt: Date.now()
-        });
-        data.events = events;
-        tx.set(slotRef, data);
+        events.push({ id, cat, dg, diff, cap, title: `${nick}의 파티`, hostUid: CURRENT_USER.uid, hostNick: nick, members:[{uid:CURRENT_USER.uid, nick}], createdAt: Date.now() });
+        data.events = events; tx.set(slotRef, data);
       }).catch(e=> alert(e.message));
 
       // 주간 타임 인덱스 업데이트 (있는 시간만 표시)
@@ -441,12 +432,12 @@
     function dungeonClass(id){ return id==='mas'?'dg-mas':(id==='glas'?'dg-glas':'dg-succ'); }
 
     function diffClass(name){
-      const n = String(name||'').replace(/\s+/g,'');
+      const n = String(name||'').replace(/ /g,'');
       if(n==='입문') return 'diff-easy';
       if(n==='어려움') return 'diff-hard';
       if(n==='매우어려움') return 'diff-veryhard';
       if(n==='입문~지옥6' || n==='입분~지6') return 'diff-pink';
-      if(/^지옥\d+$/.test(n)) return 'diff-veryhard';
+      if(/^지옥[0-9]+$/.test(n)) return 'diff-veryhard';
       return '';
     }
 
@@ -460,53 +451,50 @@
           if(Number(dd)===d && Array.isArray(events) && events.length>0){ list.push({ time, events }); }
         }
         if(list.length===0) continue; any=true; list.sort((a,b)=> a.time.localeCompare(b.time));
-    
+
         const dayEl=document.createElement('section'); dayEl.className='day';
         const dateObj=new Date(CURRENT_WEEK_MON); dateObj.setDate(CURRENT_WEEK_MON.getDate()+d);
         const dateStr=`${pad2(dateObj.getMonth()+1)}-${pad2(dateObj.getDate())}`;
         dayEl.innerHTML = `<header><h2>${DAYS[d]} <span class="date">${dateStr}</span></h2></header>`;
         const slotsEl=document.createElement('div'); slotsEl.className='slots';
-    
+
         for(const item of list){
           const slotEl=document.createElement('div'); slotEl.className='slot';
           slotEl.innerHTML = `<div class="time">${item.time}</div>`;
           for(const ev of item.events){
-            // 과거 데이터 호환
             const cat = ev.cat || (ev.type==='abyss'?'abyss':'raid');
             const dg  = ev.dg  || (ev.type==='abyss'?'mas':(ev.type==='glas'?'glas':'succ'));
             const diffCls = diffClass(ev.diff);
             const full = (ev.members?.length||0) >= (ev.cap||4);
             const host = ev.hostNick || (ev.members?.[0]?.nick || '파티');
             const title = ev.title || `${host}의 파티`;
-    
-            // ✅ 내가 참가한 파티인지 판별
+
             const isMine = !!(CURRENT_USER && (ev.members||[]).some(m=>m.uid===CURRENT_USER.uid));
-    
-            const names = (ev.members||[]).map(m=>`<span class="chip">${escapeHtml(m.nick)}</span>`).join('') || '<span class="muted">(비어있음)</span>';
+
+            const names = (ev.members||[]).map(m=>`<span class=\"chip\">${escapeHtml(m.nick)}</span>`).join('') || '<span class=\"muted\">(비어있음)</span>';
             const evEl=document.createElement('div');
             evEl.className = 'event' + (full?' full':'') + (isMine?' mine':'');
-    
+
             evEl.innerHTML = `
               <div>
-                <div class="label">
-                  <span class="badge ${cat==='abyss'?'cat-abyss':'cat-raid'}">${labelCat(cat)}</span>
-                  <span class="badge ${dungeonClass(dg)}">${labelDungeon(dg)}</span>
-                  <span class="badge diff ${diffCls}">${ev.diff}</span>
-                  <span class="count">${(ev.members?.length||0)}/${ev.cap||4}</span>
-                  ${isMine ? '<span class="badge mine">내 파티</span>' : ''}
+                <div class=\"label\">
+                  <span class=\"badge ${cat==='abyss'?'cat-abyss':'cat-raid'}\">${labelCat(cat)}</span>
+                  <span class=\"badge ${dungeonClass(dg)}\">${labelDungeon(dg)}</span>
+                  <span class=\"badge diff ${diffCls}\">${ev.diff}</span>
+                  <span class=\"count\">${(ev.members?.length||0)}/${ev.cap||4}</span>
+                  ${isMine ? '<span class=\"badge mine\">내 파티</span>' : ''}
                 </div>
-                <div class="title">${escapeHtml(title)}</div>
-                <div class="names">${names}</div>
+                <div class=\"title\">${escapeHtml(title)}</div>
+                <div class=\"names\">${names}</div>
               </div>
-              <div class="btns">
-                <button class="btn-join">참가</button>
-                <button class="btn-leave">취소</button>
+              <div class=\"btns\">
+                <button class=\"btn-join\">참가</button>
+                <button class=\"btn-leave\">취소</button>
               </div>`;
-    
+
             const joinBtn = evEl.querySelector('.btn-join');
             const leaveBtn = evEl.querySelector('.btn-leave');
-    
-            // 참가/취소 버튼 동작
+
             joinBtn.addEventListener('click', ()=>{
               const nick=(nickEl.value||'').trim(); if(!nick){ alert('닉네임을 먼저 저장하세요.'); return; }
               const sid = `${d}-${item.time}`; joinEvent(CURRENT_WEEK_ID, sid, ev.id, ev.cap||4);
@@ -514,13 +502,10 @@
             leaveBtn.addEventListener('click', ()=>{
               const sid = `${d}-${item.time}`; leaveEvent(CURRENT_WEEK_ID, sid);
             });
-    
-            // ✅ 내 파티면 참가 버튼 비활성(이미 들어가 있으니)
+
             if(isMine){ joinBtn.disabled = true; joinBtn.style.opacity='0.6'; joinBtn.title='이미 참가한 파티입니다'; }
-            // 정원 찼으면 참가 버튼 비활성
             if(full && !isMine){ joinBtn.disabled = true; joinBtn.style.opacity='0.6'; joinBtn.title='정원이 가득 찼습니다'; }
-    
-            // 호스트 전용 삭제 버튼
+
             if(ev.hostUid && CURRENT_USER && ev.hostUid===CURRENT_USER.uid){
               const delBtn = document.createElement('button');
               delBtn.className='btn-delete'; delBtn.textContent='삭제';
@@ -529,7 +514,7 @@
                 const sid = `${d}-${item.time}`; deleteEvent(CURRENT_WEEK_ID, sid, ev.id);
               });
             }
-        
+
             slotEl.appendChild(evEl);
           }
           slotsEl.appendChild(slotEl);
@@ -540,6 +525,17 @@
       emptyHint.style.display = any? 'none':'block';
     }
 
+    // 안전한 HTML 이스케이프
+    function escapeHtml(s){
+      return String(s || '').replace(/[&<>"']/g, function(ch){
+        if (ch === '&') return '&amp;';
+        if (ch === '<') return '&lt;';
+        if (ch === '>') return '&gt;';
+        if (ch === '"') return '&quot;';
+        if (ch === "'") return '&#39;';
+        return ch;
+      });
+    }
 
     async function joinEvent(weekId, sid, eventId, cap){
       const nick=(nickEl.value||'').trim(); if(!nick){ alert('닉네임을 먼저 저장하세요.'); return; }
@@ -548,19 +544,14 @@
         const snap = await tx.get(ref);
         if(!snap.exists()) throw new Error('해당 파티가 삭제되었을 수 있습니다.');
         const data = snap.data(); let events = data.events||[];
-        // 1) 동시간대 중복 방지
         for(const e of events){ e.members = (e.members||[]).filter(m=>m.uid!==CURRENT_USER.uid); }
-        // 2) 대상 이벤트에 나 추가
         const target = events.find(e=>e.id===eventId);
         if(!target) throw new Error('해당 파티가 없습니다.');
         if((target.members?.length||0) >= (target.cap||cap)) throw new Error('정원이 가득 찼습니다.');
         target.members = [...(target.members||[]), { uid: CURRENT_USER.uid, nick }];
-        // 3) 멤버 0 이벤트 제거
         events = events.filter(e => (e.members?.length||0) > 0);
-        // 4) 문서 갱신
         if(events.length===0){ tx.delete(ref); } else { tx.set(ref, { events }, { merge:true }); }
       }).catch(e=>alert(e.message));
-      // 5) week.times 정리
       const time = sid.split('-').slice(1).join('-');
       await pruneWeekTimeIfEmpty(weekId, time);
     }
@@ -570,37 +561,14 @@
       await runTransaction(db, async (tx)=>{
         const snap = await tx.get(ref); if(!snap.exists()) return;
         let events = (snap.data().events||[]);
-        // 내 uid 제거
         let touched=false;
-        for(const e of events){
-          const before=e.members||[];
-          const after=before.filter(m=>m.uid!==CURRENT_USER.uid);
-          if(after.length!==before.length){ e.members=after; touched=true; }
-        }
-        // 멤버 0 이벤트 삭제
+        for(const e of events){ const before=e.members||[]; const after=before.filter(m=>m.uid!==CURRENT_USER.uid); if(after.length!==before.length){ e.members=after; touched=true; } }
         events = events.filter(e => (e.members?.length||0) > 0);
-        if(!touched && events.length>0) return; // 변경 없음
+        if(!touched && events.length>0) return;
         if(events.length===0){ tx.delete(ref); } else { tx.set(ref, { events }, { merge:true }); }
       }).catch(e=>console.warn(e));
-      // 주간 times에서 비었으면 제거
       const time = sid.split('-').slice(1).join('-');
       await pruneWeekTimeIfEmpty(weekId, time);
-    }
-
-    function escapeHtml(s){
-      return String(s || '').replace(/[&<>"']/g, (ch) => {
-        switch (ch) {
-          case '&': return '&amp;';
-          case '<': return '&lt;';
-          case '>': return '&gt;';
-          case '"': return '&quot;';
-          case "'": return '&#39;';
-          default: return ch;
-        }
-      });
-    }[c]));
-    }[c]));
-    }[c]));
     }
 
     async function deleteEvent(weekId, sid, eventId){
