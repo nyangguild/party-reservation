@@ -104,7 +104,20 @@
       color:#cfefff;
       font-weight:700;
     }
-  </style>
+    /* === Responsive (모바일 우선) === */
+  @media (max-width: 520px){
+    .rowline{ gap:12px; }
+    .picker-btn, button.primary{ white-space:nowrap; word-break:keep-all; min-width:96px; flex-shrink:0 }
+    #ampmSelect{ width:84px }
+    #hourSelect, #minSelect{ width:68px }
+    .ws-day{ min-width:110px }
+  }
+  @media (max-width: 360px){
+    #createEvent.mobile-fullwidth{ width:100%; margin-left:0 }
+  }
+  /* 위치 조정용 헬퍼 */
+  #createEvent.ml-auto{ margin-left:auto }
+</style>
   <meta name="theme-color" content="#0b0f14" />
   <!-- 카카오톡 미리보기(OG) -->
   <meta property="og:type" content="website" />
@@ -251,6 +264,10 @@
     const dungeonEl = document.getElementById('dungeonSelect');
     const eventDiffEl = document.getElementById('eventDiff');
     const createEventBtn = document.getElementById('createEvent');
+    // 파티 생성 버튼 재배치 대상 행 찾기
+    const _rows = document.querySelectorAll('.form-grid .rowline');
+    const DATE_ROW = _rows[1]; // 날짜/시간 줄
+    const CAT_ROW  = _rows[2]; // 분류/던전/난이도 줄
 
     const eventsContainer = document.getElementById('eventsContainer');
     const emptyHint = document.getElementById('emptyHint');
@@ -416,6 +433,8 @@
     function unsubAll(){ if(unsubWeek) try{unsubWeek();}catch(e){} unsubWeek=null; for(const u of slotUnsubs) try{u();}catch(e){} slotUnsubs=[]; }
 
     function boot(){
+      // 초기 버튼 레이아웃 조정
+      reflowCreateButton();
       unsubAll();
       const sun=new Date(CURRENT_WEEK_MON); sun.setDate(CURRENT_WEEK_MON.getDate()+6);
       weekLabel.textContent = `${CURRENT_WEEK_MON.getFullYear()}-${pad2(CURRENT_WEEK_MON.getMonth()+1)}-${pad2(CURRENT_WEEK_MON.getDate())} ~ ${sun.getFullYear()}-${pad2(sun.getMonth()+1)}-${pad2(sun.getDate())}`;
@@ -431,6 +450,7 @@
         const times = snap.exists()? (snap.data().times||[]) : [];
         if(!times || times.length===0){ hydrateTimesIfMissing(CURRENT_WEEK_ID); }
         attachSlotListeners(times);
+        reflowCreateButton();
       });
     }
 
@@ -522,6 +542,21 @@
       }
       return res;
     }
+
+    // ===== 레이아웃 유틸: 모바일에서 파티생성 버튼 위치 조정 =====
+    function reflowCreateButton(){
+      const w = window.innerWidth || document.documentElement.clientWidth;
+      if(w <= 520){
+        if(createEventBtn.parentElement !== CAT_ROW){ CAT_ROW.appendChild(createEventBtn); }
+        createEventBtn.classList.add('ml-auto');
+        if(w <= 360){ createEventBtn.classList.add('mobile-fullwidth'); }
+        else{ createEventBtn.classList.remove('mobile-fullwidth'); }
+      }else{
+        if(createEventBtn.parentElement !== DATE_ROW){ DATE_ROW.appendChild(createEventBtn); }
+        createEventBtn.classList.remove('ml-auto','mobile-fullwidth');
+      }
+    }
+    let __rfTimer=null; window.addEventListener('resize', ()=>{ clearTimeout(__rfTimer); __rfTimer=setTimeout(reflowCreateButton,150); });
 
     function renderWeekStrip(){
       if(!weekStrip) return;
