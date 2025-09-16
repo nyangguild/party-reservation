@@ -137,7 +137,12 @@
           </div>
           <div class="field">
             <label>시간</label>
-            <select id="eventTime" class="no-native-icon"></select>
+            <select id="ampmSelect" class="no-native-icon">
+              <option value="AM">오전</option>
+              <option value="PM">오후</option>
+            </select>
+            <select id="hourSelect" class="no-native-icon"></select>
+            <select id="minSelect" class="no-native-icon"></select>
             <button id="btnTimePicker" class="picker-btn" title="시간 선택">🕒</button>
           </div>
           <div class="grow"></div>
@@ -223,7 +228,9 @@
 
     const eventDateEl = document.getElementById('eventDate');
     const btnDatePicker = document.getElementById('btnDatePicker');
-    const eventTimeEl = document.getElementById('eventTime');
+    const ampmEl = document.getElementById('ampmSelect');
+    const hourEl = document.getElementById('hourSelect');
+    const minEl  = document.getElementById('minSelect');
     const btnTimePicker = document.getElementById('btnTimePicker');
 
     const catEl = document.getElementById('catSelect');
@@ -283,7 +290,7 @@
     btnWeekPicker.onclick = ()=> safeShow(weekStartEl);
     btnWeekPicker2.onclick = ()=> safeShow(weekStart2);
     btnDatePicker.onclick = ()=> safeShow(eventDateEl);
-    btnTimePicker.onclick = ()=> safeShow(eventTimeEl);
+    btnTimePicker.onclick = ()=> hourEl.focus();
 
     // ---------- 주간 이동 ----------
     goWeekBtn.onclick = ()=>{ const picked = weekStartEl.valueAsDate; if(!picked){ alert('날짜를 선택하세요.'); return; } setWeekByDate(picked); };
@@ -328,23 +335,35 @@
       }
     }
 
-    // 5분 단위 셀렉트용 옵션 생성
-    function labelAMPM(h){ return h<12 ? '오전' : '오후'; }
-    function displayHour(h){ let hh=h%12; if(hh===0) hh=12; return pad2(hh); }
-    function buildTimeOptions(){
-      eventTimeEl.innerHTML='';
-      for(let h=0; h<24; h++){
-        for(let m=0; m<60; m+=5){
-          const value = `${pad2(h)}:${pad2(m)}`;
-          const opt = document.createElement('option');
-          opt.value = value;
-          opt.textContent = `${labelAMPM(h)} ${displayHour(h)}:${pad2(m)}`;
-          eventTimeEl.appendChild(opt);
-        }
+    // 시간 셀렉트(오전/오후, 시, 분) 초기화
+    function initTimeSelects(defaultHHMM='20:00'){
+      // 시: 01~12
+      hourEl.innerHTML='';
+      for(let h=1; h<=12; h++){
+        const o=document.createElement('option'); o.value=pad2(h); o.textContent=pad2(h); hourEl.appendChild(o);
       }
-      if(!eventTimeEl.value) eventTimeEl.value = '20:00';
+      // 분: 00,05,10,...55
+      minEl.innerHTML='';
+      for(let m=0; m<60; m+=5){
+        const o=document.createElement('option'); o.value=pad2(m); o.textContent=pad2(m); minEl.appendChild(o);
+      }
+      setTimeSelectFromValue(defaultHHMM);
     }
-    buildTimeOptions();
+    function setTimeSelectFromValue(hhmm){
+      const parts=(hhmm||'20:00').split(':');
+      let H=parseInt(parts[0]||'20',10); let M=parseInt(parts[1]||'0',10);
+      if(Number.isNaN(H)) H=20; if(Number.isNaN(M)) M=0;
+      const isPM = H>=12; const h12=((H+11)%12)+1;
+      ampmEl.value=isPM?'PM':'AM';
+      hourEl.value=pad2(h12);
+      minEl.value=pad2(Math.round(M/5)*5 % 60);
+    }
+    function getTimeValue(){
+      const ampm=ampmEl.value; let h=parseInt(hourEl.value||'12',10); let m=parseInt(minEl.value||'0',10);
+      if(ampm==='PM' && h<12) h+=12; if(ampm==='AM' && h===12) h=0;
+      return `${pad2(h)}:${pad2(m)}`;
+    }
+    initTimeSelects('20:00');
 
     // ---------- 파티 생성 ----------
     createEventBtn.onclick = async ()=>{
@@ -352,7 +371,7 @@
       const sel = new Date(eventDateEl.value); sel.setHours(0,0,0,0);
       const dIdx = Math.floor((sel - CURRENT_WEEK_MON)/86400000);
       if(dIdx<0 || dIdx>6){ alert('선택한 날짜가 현재 주간(월~일) 범위를 벗어났습니다. 상단 ' + '해당 주 보기' + '로 주간을 먼저 맞춰주세요.'); return; }
-      const time = normalizeTimeStr(eventTimeEl.value || '20:00');
+      const time = getTimeValue();
       const cat = catEl.value; const dg = dungeonEl.value; const diff = eventDiffEl.value; const cap = CAP(dg);
       const sid = `${dIdx}-${time}`;
 
