@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>주간 파티 예약판 (동시간대 최대 3파티)</title>
+  <style>
+    :root{
+      --bg:#0b0f14;--card:#121821;--muted:#8aa1b2;--accent:#64a9ff;--accentBg:#0e2236;--ok:#2ecc71;--warn:#ffb84d;--danger:#ff6b6b;--line:#1f2a36;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--bg);color:#e6eef5}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 16px}
+    h1{font-size:22px;margin:0 0 10px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .section-head{margin-bottom:14px}
+    label{font-size:14px;color:#8aa1b2}
+    input,select,button{height:36px;border-radius:10px;border:1px solid var(--line);background:#0f141b;color:#e6eef5;padding:0 10px}
+    /* 하늘색 강조 스타일 */
+    input[type="date"], input[type="time"], select{border-color:var(--accent);background:var(--accentBg)}
+    input[type="date"]:focus, input[type="time"]:focus, select:focus{outline:none;box-shadow:0 0 0 3px rgba(100,169,255,.25)}
+    /* 기본 아이콘 숨김 + 텍스트 색 통일 */
+    .no-native-icon::-webkit-calendar-picker-indicator{opacity:0; pointer-events:none}
+    .no-native-icon::-webkit-inner-spin-button{display:none}
+    .no-native-icon::-webkit-clear-button{display:none}
+    .no-native-icon{color:#e6eef5}
+
+    .picker-btn{height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#00172e;font-weight:700;cursor:pointer}
+    .picker-btn:active{transform:translateY(1px)}
+
+    button{cursor:pointer}
+    button.primary{background:var(--accent);border-color:transparent;color:#00172e;font-weight:700}
+    .hint{font-size:12px;color:#99b2c7}
+    .muted{color:#8aa1b2}
+
+    /* 파티 생성 폼 레이아웃 */
+    .form-grid{display:flex;flex-direction:column;gap:10px}
+    .rowline{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .field{display:flex;gap:10px;align-items:center}
+    .grow{flex:1}
+
+    /* 이벤트 리스트 (있는 시간만) */
+    .events{display:flex;flex-direction:column;gap:18px}
+    .day{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+    .day>header{display:flex;align-items:center;justify-content:space-between;background:#0f141b;padding:12px;border-bottom:1px solid var(--line)}
+    .day>header h2{font-size:15px;margin:0;color:#e6eef5;display:flex;gap:8px;align-items:center}
+    .day>header .date{font-size:12px;color:#e6eef5;border:1px solid var(--line);padding:2px 8px;border-radius:999px;background:#0f141b}
+    .slots{padding:16px;display:flex;flex-direction:column;gap:14px}
+    .slot{border:1px solid var(--line);border-radius:12px;padding:12px}
+    .slot .time{font-weight:700;color:#bcd0df;margin-bottom:8px}
+    .event{display:grid;grid-template-columns:1fr auto;gap:10px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#0e131a;margin-top:8px}
+    .label{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .badge{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:#cfe3f2}
+    .title{font-weight:700;color:#e6eef5;margin:6px 0 4px 0}
+    .names{display:flex;gap:6px;flex-wrap:wrap}
+    .chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #294f77;background:linear-gradient(180deg,#10263c,#0b1624);color:#d3e8ff}
+    .btns{display:flex;gap:6px}
+    .btn-delete{background:#3a1020;color:#ffd6e2;border:1px solid #5a1a31;border-radius:10px;height:36px;padding:0 10px;cursor:pointer}
+    .btn-join{background:#21354a;color:#cfe3f2}
+    .btn-leave{background:#2a1b1b;color:#ffd5d5;border-color:#512b2b}
+    .count{font-weight:700}
+    .full{border-color:#3a2a12;background:#1a1410}
+    .full .count{color:var(--warn)}
+
+    /* 카테고리/던전 색상 */
+    .cat-abyss{border-color:#52d1ff;background:linear-gradient(180deg,#0e2a40,#091b2b);color:#dff6ff}
+    .cat-raid{border-color:#ffb84d;background:linear-gradient(180deg,#3a2a12,#1a1410);color:#ffe0a6}
+    .dg-mas{border-color:#27d3c1;background:linear-gradient(180deg,#0a2d2b,#081c1b);color:#baf7f0}
+    .dg-glas{border-color:#8a7bff;background:linear-gradient(180deg,#241d56,#141132);color:#e8e3ff}
+    .dg-succ{border-color:#ff6aa8;background:linear-gradient(180deg,#3a0d25,#210817);color:#ffd6e8}
+
+    /* 난이도 뱃지 색 테마 (통일) */
+    .badge.diff{border-width:2px;font-weight:700}
+    .diff-easy{border-color:#9b7bff;background:radial-gradient(60% 100% at 30% 30%, #7a5cff 0%, #3d2a85 70%);color:#efe8ff;box-shadow:0 0 0 1px rgba(155,123,255,.25) inset,0 0 12px rgba(122,92,255,.15) inset}
+    .diff-hard{border-color:#ffb84d;background:linear-gradient(180deg,#3a2a12,#1a1410);color:#ffd68a;box-shadow:0 0 0 1px rgba(255,184,77,.2) inset}
+    .diff-veryhard{border-color:#ff3b30;background:linear-gradient(180deg,#321112,#21090a);color:#ff8a82;box-shadow:0 0 0 1px rgba(255,59,48,.25) inset}
+    .diff-pink{border-color:#ff56c8;background:radial-gradient(65% 100% at 40% 40%, #ff69d4 0%, #5e0f63 70%);color:#ffe9fb;box-shadow:0 0 0 1px rgba(255,86,200,.25) inset}
+    #topWeekControls{display:none}
+    .credit{margin:4px 0 12px 0;display:flex;align-items:center;gap:8px;color:#cfe3f2;font-size:13px}
+    .credit .pill{padding:4px 10px;border-radius:999px;background:linear-gradient(180deg,#0e2a40,#091b2b);border:1px solid #2a435a;color:#a8ddff;font-weight:700}
+    .credit strong{color:#ffffff}
+    /* 내가 참가한 파티 하이라이트 */
+    .event.mine{
+      border-color:#69d3ff;
+      box-shadow:0 0 0 1px rgba(105,211,255,.25) inset, 0 0 14px rgba(100,169,255,.25);
+    }
+    .badge.mine{
+      border-color:#69d3ff;
+      background:linear-gradient(180deg,#0f2b3d,#0b1d2b);
+      color:#cfefff;
+      font-weight:700;
+    }
+  </style>
+  <meta name="theme-color" content="#0b0f14" />
+  <!-- 카카오톡 미리보기(OG) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="냥슐랭 파티 예약판" />
+  <meta property="og:description" content="동시간대 최대 3파티 · 실시간 참가/취소 · 주간 보기" />
+  <meta property="og:image" content="og.png" />
+</head>
+<body>
+  <div class="wrap">
+    <h1>주간 파티 예약판 <span class="hint">(동시간대 최대 3파티 · 주간 보기)</span></h1>
+    <div class="credit"><span class="pill">메이븐</span><span>서버 <strong>‘냥슐랭’</strong>의 <strong>냥베리</strong>가 만들었습니다.</span></div>
+
+    <!-- 기본 정보 -->
+    <div class="card">
+      <div class="row">
+        <div class="field">
+          <label>별명/닉네임</label>
+          <input id="nick" placeholder="인게임 닉네임" style="width:180px" />
+          <button id="saveNick" class="primary">닉네임 저장</button>
+        </div>
+        <div class="field" id="topWeekControls">
+          <label>주간 시작일(월요일)</label>
+          <input type="date" id="weekStart" class="no-native-icon" />
+          <button id="goWeek" class="primary">해당 주 보기</button>
+          <button id="btnWeekPicker" class="picker-btn" title="주간 선택">📅</button>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:8px">닉네임을 저장하면 클릭 한 번으로 참가/취소가 됩니다. 이 화면은 선택한 ‘해당 주’의 파티만 보여줍니다.</div>
+    </div>
+
+    <!-- 파티 생성 -->
+    <div class="card">
+      <div class="form-grid">
+        <div class="rowline">
+          <strong>파티 생성</strong>
+        </div>
+        <!-- 1줄: 날짜 / 시간 -->
+        <div class="rowline">
+          <div class="field">
+            <label>날짜</label>
+            <input type="date" id="eventDate" class="no-native-icon" />
+            <button id="btnDatePicker" class="picker-btn" title="날짜 선택">📅</button>
+          </div>
+          <div class="field">
+            <label>시간</label>
+            <input type="time" id="eventTime" value="20:00" step="1800" class="no-native-icon" />
+            <button id="btnTimePicker" class="picker-btn" title="시간 선택">🕒</button>
+          </div>
+          <div class="grow"></div>
+          <button id="createEvent" class="primary">파티 생성</button>
+        </div>
+        <!-- 2줄: 분류 / 던전 / 난이도 -->
+        <div class="rowline">
+          <div class="field">
+            <label>분류</label>
+            <select id="catSelect">
+              <option value="abyss">어비스</option>
+              <option value="raid">레이드</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>던전</label>
+            <select id="dungeonSelect"></select>
+          </div>
+          <div class="field">
+            <label>난이도</label>
+            <select id="eventDiff"></select>
+          </div>
+        </div>
+        <!-- 3줄: 설명 -->
+        <div class="rowline"><div class="hint">정원은 던전에 따라 자동 설정됩니다: 어비스(마스 등) 4 / 글라스기브넨 8 / 서큐버스 4</div></div>
+      </div>
+    </div>
+
+    <!-- 주간 파티 목록 (있는 시간만 표시) -->
+    <div class="card">
+      <div class="row section-head" style="justify-content:space-between; margin-bottom:8px">
+        <strong>이번 주 파티 목록</strong>
+        <div class="row" style="gap:8px;align-items:center">
+          <button id="prevWeek" class="picker-btn" title="이전 주">◀</button>
+          <input type="date" id="weekStart2" class="no-native-icon" />
+          <button id="btnWeekPicker2" class="picker-btn" title="날짜 선택">📅</button>
+          <button id="goWeek2" class="primary">이 주 보기</button>
+          <button id="nextWeek" class="picker-btn" title="다음 주">▶</button>
+          <span class="muted" id="weekLabel"></span>
+        </div>
+      </div>
+      <div id="eventsContainer" class="events"></div>
+      <div class="hint" id="emptyHint" style="display:none; margin-top:8px">아직 생성된 파티가 없습니다. 위에서 파티를 만들어보세요.</div>
+    </div>
+
+    <div class="hint">⚙️ 무료 호스팅: GitHub Pages · 데이터: Firebase Firestore(익명 로그인)</div>
+  </div>
+
+  <script type="module">
+    // 🔑 Firebase 구성
+    const firebaseConfig = {
+      apiKey: "AIzaSyBa0Lo3qikOS495BmX4JAew63QF7h5FnC0",
+      authDomain: "party-reservation.firebaseapp.com",
+      projectId: "party-reservation",
+      storageBucket: "party-reservation.firebasestorage.app",
+      messagingSenderId: "566891379159",
+      appId: "1:566891379159:web:8d69d4996dd859a295f392",
+      measurementId: "G-XQBDVLWEJD"
+    };
+
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    import { getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ---------- 상수/요소 ----------
+    const DAYS = ['월','화','수','목','금','토','일'];
+
+    const nickEl = document.getElementById('nick');
+    const saveNickBtn = document.getElementById('saveNick');
+    const weekStartEl = document.getElementById('weekStart');
+    const goWeekBtn = document.getElementById('goWeek');
+    const btnWeekPicker = document.getElementById('btnWeekPicker');
+    const weekLabel = document.getElementById('weekLabel');
+    const weekStart2 = document.getElementById('weekStart2');
+    const goWeek2 = document.getElementById('goWeek2');
+    const btnWeekPicker2 = document.getElementById('btnWeekPicker2');
+    const prevWeek = document.getElementById('prevWeek');
+    const nextWeek = document.getElementById('nextWeek');
+
+    const eventDateEl = document.getElementById('eventDate');
+    const btnDatePicker = document.getElementById('btnDatePicker');
+    const eventTimeEl = document.getElementById('eventTime');
+    const btnTimePicker = document.getElementById('btnTimePicker');
+
+    const catEl = document.getElementById('catSelect');
+    const dungeonEl = document.getElementById('dungeonSelect');
+    const eventDiffEl = document.getElementById('eventDiff');
+    const createEventBtn = document.getElementById('createEvent');
+
+    const eventsContainer = document.getElementById('eventsContainer');
+    const emptyHint = document.getElementById('emptyHint');
+
+    // 분류/던전/난이도 프리셋
+    const DUNGEONS = {
+      abyss: [ {id:'mas', name:'마스 던전'} ],
+      raid:  [ {id:'glas', name:'글라스기브넨'}, {id:'succ', name:'서큐버스'} ]
+    };
+    const DIFFS = {
+      mas: ['입문','어려움','매우어려움','지옥1','지옥2','지옥3','지옥4','지옥5','지옥6','지옥7','입문~지옥6'],
+      glas: ['입문','어려움','매우어려움'],
+      succ: ['어려움']
+    };
+    const CAP = (dg)=> dg==='glas'? 8 : 4;
+
+    // 로컬 저장 닉
+    nickEl.value = localStorage.getItem('party_nick') || '';
+
+    // 유틸
+    const pad2=n=>String(n).padStart(2,'0');
+    function mondayOf(date){ const d = new Date(date); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); d.setHours(0,0,0,0); return d; }
+    function weekIdFromDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+
+    // 초기 주간
+    const defMon = mondayOf(new Date());
+    weekStartEl.valueAsDate = defMon;
+    let CURRENT_WEEK_MON = defMon;
+    let CURRENT_WEEK_ID  = weekIdFromDate(defMon);
+    let CURRENT_USER = null;
+
+    // ---------- 인증 ----------
+    signInAnonymously(auth).catch(e=>{ console.error(e); alert('로그인 실패: '+e.code); });
+    onAuthStateChanged(auth, user=>{ if(user){ CURRENT_USER=user; boot(); } });
+
+    // ---------- 닉네임 저장 ----------
+    saveNickBtn.onclick = ()=>{
+      const v = nickEl.value.trim();
+      if(!v){ alert('닉네임을 입력하세요.'); return; }
+      localStorage.setItem('party_nick', v);
+      alert('닉네임 저장 완료');
+    };
+
+    // ---------- 픽커 버튼 ----------
+    const safeShow = (el)=>{ if(el.showPicker) el.showPicker(); else el.focus(); };
+    btnWeekPicker.onclick = ()=> safeShow(weekStartEl);
+    btnWeekPicker2.onclick = ()=> safeShow(weekStart2);
+    btnDatePicker.onclick = ()=> safeShow(eventDateEl);
+    btnTimePicker.onclick = ()=> safeShow(eventTimeEl);
+
+    // ---------- 주간 이동 ----------
+    goWeekBtn.onclick = ()=>{ const picked = weekStartEl.valueAsDate; if(!picked){ alert('날짜를 선택하세요.'); return; } setWeekByDate(picked); };
+    goWeek2.onclick = ()=>{ const picked = weekStart2.valueAsDate; if(!picked){ alert('날짜를 선택하세요.'); return; } setWeekByDate(picked); };
+    prevWeek.onclick = ()=>{ const d=new Date(CURRENT_WEEK_MON); d.setDate(d.getDate()-7); setWeekByDate(d); };
+    nextWeek.onclick = ()=>{ const d=new Date(CURRENT_WEEK_MON); d.setDate(d.getDate()+7); setWeekByDate(d); };
+
+    function setWeekByDate(dateObj){
+      CURRENT_WEEK_MON = mondayOf(dateObj);
+      CURRENT_WEEK_ID  = weekIdFromDate(CURRENT_WEEK_MON);
+      weekStartEl.valueAsDate = CURRENT_WEEK_MON;
+      if(weekStart2) weekStart2.valueAsDate = CURRENT_WEEK_MON;
+      boot();
+    }
+
+    // ---------- 분류→던전→난이도 연동 ----------
+    function refreshDungeons(){
+      const cat = catEl.value; dungeonEl.innerHTML='';
+      for(const d of DUNGEONS[cat]){ const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; dungeonEl.appendChild(o); }
+      refreshDiffs();
+    }
+    function refreshDiffs(){
+      const dg = dungeonEl.value; eventDiffEl.innerHTML='';
+      (DIFFS[dg]||[]).forEach(x=>{ const o=document.createElement('option'); o.value=x; o.textContent=x; eventDiffEl.appendChild(o); });
+    }
+    catEl.addEventListener('change', refreshDungeons);
+    dungeonEl.addEventListener('change', refreshDiffs);
+    refreshDungeons();
+
+    // 주간 범위로 파티 생성 날짜 제한
+    function syncEventDateRange(){
+      const min=new Date(CURRENT_WEEK_MON); const max=new Date(CURRENT_WEEK_MON); max.setDate(max.getDate()+6);
+      eventDateEl.min = `${min.getFullYear()}-${pad2(min.getMonth()+1)}-${pad2(min.getDate())}`;
+      eventDateEl.max = `${max.getFullYear()}-${pad2(max.getMonth()+1)}-${pad2(max.getDate())}`;
+      if(!eventDateEl.value){ eventDateEl.valueAsDate = new Date(CURRENT_WEEK_MON); }
+    }
+
+    // ---------- 파티 생성 ----------
+    createEventBtn.onclick = async ()=>{
+      const nick=(nickEl.value||'').trim(); if(!nick){ alert('닉네임을 먼저 저장하세요.'); return; }
+      const sel = new Date(eventDateEl.value); sel.setHours(0,0,0,0);
+      const dIdx = Math.floor((sel - CURRENT_WEEK_MON)/86400000);
+      if(dIdx<0 || dIdx>6){ alert('선택한 날짜가 현재 주간(월~일) 범위를 벗어났습니다. 상단 "해당 주 보기"로 주간을 먼저 맞춰주세요.'); return; }
+      const time = eventTimeEl.value || '20:00';
+      const cat = catEl.value; const dg = dungeonEl.value; const diff = eventDiffEl.value; const cap = CAP(dg);
+      const sid = `${dIdx}-${time}`;
+
+      const slotRef = doc(db, 'weeks', CURRENT_WEEK_ID, 'slots', sid);
+      await runTransaction(db, async (tx)=>{
+        const snap = await tx.get(slotRef);
+        let data = snap.exists()? snap.data(): { events: [] };
+        const events = Array.isArray(data.events)? data.events: [];
+        if(events.length >= 3) throw new Error('해당 시간대의 파티가 이미 3개입니다.');
+        // 동시간대 중복 방지
+        for(const e of events){ e.members = (e.members||[]).filter(m=>m.uid!==CURRENT_USER.uid); }
+        const id = 'e'+Date.now()+Math.random().toString(36).slice(2,7);
+        events.push({
+          id, cat, dg, diff, cap,
+          title: `${nick}의 파티`,
+          hostUid: CURRENT_USER.uid,
+          hostNick: nick,
+          members:[{uid:CURRENT_USER.uid, nick}],
+          createdAt: Date.now()
+        });
+        data.events = events;
+        tx.set(slotRef, data);
+      }).catch(e=> alert(e.message));
+
+      // 주간 타임 인덱스 업데이트 (있는 시간만 표시)
+      const weekRef = doc(db, 'weeks', CURRENT_WEEK_ID);
+      const wSnap = await getDoc(weekRef);
+      const times = wSnap.exists()? (wSnap.data().times||[]) : [];
+      if(!times.includes(time)){ await setDoc(weekRef, { times: [...times, time] }, { merge:true }); }
+    };
+
+    // ---------- 실시간 구독 & 렌더 ----------
+    let unsubWeek = null; let slotUnsubs = []; const SLOT_DATA = new Map();
+    function unsubAll(){ if(unsubWeek) try{unsubWeek();}catch(e){} unsubWeek=null; for(const u of slotUnsubs) try{u();}catch(e){} slotUnsubs=[]; }
+
+    function boot(){
+      unsubAll();
+      const sun=new Date(CURRENT_WEEK_MON); sun.setDate(CURRENT_WEEK_MON.getDate()+6);
+      weekLabel.textContent = `${CURRENT_WEEK_MON.getFullYear()}-${pad2(CURRENT_WEEK_MON.getMonth()+1)}-${pad2(CURRENT_WEEK_MON.getDate())} ~ ${sun.getFullYear()}-${pad2(sun.getMonth()+1)}-${pad2(sun.getDate())}`;
+      if(weekStart2) weekStart2.valueAsDate = CURRENT_WEEK_MON;
+      syncEventDateRange();
+
+      const wRef = doc(db, 'weeks', CURRENT_WEEK_ID); setDoc(wRef, { times: [] }, { merge: true });
+      // 빈 times 자동 복구(기존 슬롯에서 수집)
+      hydrateTimesIfMissing(CURRENT_WEEK_ID);
+      unsubWeek = onSnapshot(wRef, (snap)=>{
+        const times = snap.exists()? (snap.data().times||[]) : [];
+        if(!times || times.length===0){ hydrateTimesIfMissing(CURRENT_WEEK_ID); }
+        attachSlotListeners(times);
+      });
+    }
+
+    async function hydrateTimesIfMissing(weekId){
+      try{
+        const wRef = doc(db,'weeks',weekId); const wSnap = await getDoc(wRef);
+        const times = wSnap.exists()? (wSnap.data().times||[]) : [];
+        if(times.length>0) return;
+        const snaps = await getDocs(collection(db,'weeks',weekId,'slots'));
+        const found = new Set();
+        snaps.forEach(d=>{ const id=d.id; const parts=id.split('-'); if(parts.length>=2) found.add(parts.slice(1).join('-')); });
+        if(found.size>0){ await setDoc(wRef, { times:[...found].sort() }, { merge:true }); }
+      }catch(e){ console.warn('hydrateTimesIfMissing failed', e); }
+    }
+
+    async function pruneWeekTimeIfEmpty(weekId, time){
+      try{
+        // 해당 주의 같은 time에 대해 요일 0..6 슬롯 존재 여부 확인
+        for(let d=0; d<7; d++){
+          const sRef = doc(db,'weeks',weekId,'slots',`${d}-${time}`);
+          const sSnap = await getDoc(sRef);
+          if(sSnap.exists()) return; // 아직 남아있음
+        }
+        // 전부 없으면 week.times에서 제거
+        const wRef = doc(db,'weeks',weekId);
+        const wSnap = await getDoc(wRef);
+        if(!wSnap.exists()) return;
+        const times = wSnap.data().times||[];
+        const next = times.filter(t=>t!==time);
+        await setDoc(wRef, { times: next }, { merge:true });
+      }catch(e){ console.warn('pruneWeekTimeIfEmpty failed', e); }
+    }
+
+    function attachSlotListeners(times){
+      for(const u of slotUnsubs) try{u();}catch(e){} slotUnsubs = [];
+      SLOT_DATA.clear();
+      if(!times || times.length===0){ renderEvents(); return; }
+      for(let d=0; d<7; d++){
+        for(const t of [...times].sort()){
+          const sid = `${d}-${t}`;
+          const sRef = doc(db, 'weeks', CURRENT_WEEK_ID, 'slots', sid);
+          const unsub = onSnapshot(sRef, (snap)=>{
+            const data = snap.exists()? snap.data(): { events: [] };
+            SLOT_DATA.set(`${d}|${t}`, data.events||[]);
+            renderEvents();
+          });
+          slotUnsubs.push(unsub);
+        }
+      }
+    }
+
+    function labelCat(c){ return c==='abyss'?'어비스':'레이드'; }
+    function labelDungeon(id){ return id==='mas'?'마스 던전':(id==='glas'?'글라스기브넨':'서큐버스'); }
+    function dungeonClass(id){ return id==='mas'?'dg-mas':(id==='glas'?'dg-glas':'dg-succ'); }
+
+    function diffClass(name){
+      const n = String(name||'').replace(/\s+/g,'');
+      if(n==='입문') return 'diff-easy';
+      if(n==='어려움') return 'diff-hard';
+      if(n==='매우어려움') return 'diff-veryhard';
+      if(n==='입문~지옥6' || n==='입분~지6') return 'diff-pink';
+      if(/^지옥\d+$/.test(n)) return 'diff-veryhard';
+      return '';
+    }
+
+    function renderEvents(){
+      eventsContainer.innerHTML='';
+      let any=false;
+      for(let d=0; d<7; d++){
+        const list=[];
+        for(const [key, events] of SLOT_DATA.entries()){
+          const [dd, time] = key.split('|');
+          if(Number(dd)===d && Array.isArray(events) && events.length>0){ list.push({ time, events }); }
+        }
+        if(list.length===0) continue; any=true; list.sort((a,b)=> a.time.localeCompare(b.time));
+    
+        const dayEl=document.createElement('section'); dayEl.className='day';
+        const dateObj=new Date(CURRENT_WEEK_MON); dateObj.setDate(CURRENT_WEEK_MON.getDate()+d);
+        const dateStr=`${pad2(dateObj.getMonth()+1)}-${pad2(dateObj.getDate())}`;
+        dayEl.innerHTML = `<header><h2>${DAYS[d]} <span class="date">${dateStr}</span></h2></header>`;
+        const slotsEl=document.createElement('div'); slotsEl.className='slots';
+    
+        for(const item of list){
+          const slotEl=document.createElement('div'); slotEl.className='slot';
+          slotEl.innerHTML = `<div class="time">${item.time}</div>`;
+          for(const ev of item.events){
+            // 과거 데이터 호환
+            const cat = ev.cat || (ev.type==='abyss'?'abyss':'raid');
+            const dg  = ev.dg  || (ev.type==='abyss'?'mas':(ev.type==='glas'?'glas':'succ'));
+            const diffCls = diffClass(ev.diff);
+            const full = (ev.members?.length||0) >= (ev.cap||4);
+            const host = ev.hostNick || (ev.members?.[0]?.nick || '파티');
+            const title = ev.title || `${host}의 파티`;
+    
+            // ✅ 내가 참가한 파티인지 판별
+            const isMine = !!(CURRENT_USER && (ev.members||[]).some(m=>m.uid===CURRENT_USER.uid));
+    
+            const names = (ev.members||[]).map(m=>`<span class="chip">${escapeHtml(m.nick)}</span>`).join('') || '<span class="muted">(비어있음)</span>';
+            const evEl=document.createElement('div');
+            evEl.className = 'event' + (full?' full':'') + (isMine?' mine':'');
+    
+            evEl.innerHTML = `
+              <div>
+                <div class="label">
+                  <span class="badge ${cat==='abyss'?'cat-abyss':'cat-raid'}">${labelCat(cat)}</span>
+                  <span class="badge ${dungeonClass(dg)}">${labelDungeon(dg)}</span>
+                  <span class="badge diff ${diffCls}">${ev.diff}</span>
+                  <span class="count">${(ev.members?.length||0)}/${ev.cap||4}</span>
+                  ${isMine ? '<span class="badge mine">내 파티</span>' : ''}
+                </div>
+                <div class="title">${escapeHtml(title)}</div>
+                <div class="names">${names}</div>
+              </div>
+              <div class="btns">
+                <button class="btn-join">참가</button>
+                <button class="btn-leave">취소</button>
+              </div>`;
+    
+            const joinBtn = evEl.querySelector('.btn-join');
+            const leaveBtn = evEl.querySelector('.btn-leave');
+    
+            // 참가/취소 버튼 동작
+            joinBtn.addEventListener('click', ()=>{
+              const nick=(nickEl.value||'').trim(); if(!nick){ alert('닉네임을 먼저 저장하세요.'); return; }
+              const sid = `${d}-${item.time}`; joinEvent(CURRENT_WEEK_ID, sid, ev.id, ev.cap||4);
+            });
+            leaveBtn.addEventListener('click', ()=>{
+              const sid = `${d}-${item.time}`; leaveEvent(CURRENT_WEEK_ID, sid);
+            });
+    
+            // ✅ 내 파티면 참가 버튼 비활성(이미 들어가 있으니)
+            if(isMine){ joinBtn.disabled = true; joinBtn.style.opacity='0.6'; joinBtn.title='이미 참가한 파티입니다'; }
+            // 정원 찼으면 참가 버튼 비활성
+            if(full && !isMine){ joinBtn.disabled = true; joinBtn.style.opacity='0.6'; joinBtn.title='정원이 가득 찼습니다'; }
+    
+            // 호스트 전용 삭제 버튼
+            if(ev.hostUid && CURRENT_USER && ev.hostUid===CURRENT_USER.uid){
+              const delBtn = document.createElement('button');
+              delBtn.className='btn-delete'; delBtn.textContent='삭제';
+              evEl.querySelector('.btns').appendChild(delBtn);
+              delBtn.addEventListener('click', ()=>{
+                const sid = `${d}-${item.time}`; deleteEvent(CURRENT_WEEK_ID, sid, ev.id);
+              });
+            }
+        
+            slotEl.appendChild(evEl);
+          }
+          slotsEl.appendChild(slotEl);
+        }
+        dayEl.appendChild(slotsEl);
+        eventsContainer.appendChild(dayEl);
+      }
+      emptyHint.style.display = any? 'none':'block';
+    }
+
+
+    async function joinEvent(weekId, sid, eventId, cap){
+      const nick=(nickEl.value||'').trim(); if(!nick){ alert('닉네임을 먼저 저장하세요.'); return; }
+      const ref = doc(db, 'weeks', weekId, 'slots', sid);
+      await runTransaction(db, async (tx)=>{
+        const snap = await tx.get(ref);
+        if(!snap.exists()) throw new Error('해당 파티가 삭제되었을 수 있습니다.');
+        const data = snap.data(); let events = data.events||[];
+        // 1) 동시간대 중복 방지
+        for(const e of events){ e.members = (e.members||[]).filter(m=>m.uid!==CURRENT_USER.uid); }
+        // 2) 대상 이벤트에 나 추가
+        const target = events.find(e=>e.id===eventId);
+        if(!target) throw new Error('해당 파티가 없습니다.');
+        if((target.members?.length||0) >= (target.cap||cap)) throw new Error('정원이 가득 찼습니다.');
+        target.members = [...(target.members||[]), { uid: CURRENT_USER.uid, nick }];
+        // 3) 멤버 0 이벤트 제거
+        events = events.filter(e => (e.members?.length||0) > 0);
+        // 4) 문서 갱신
+        if(events.length===0){ tx.delete(ref); } else { tx.set(ref, { events }, { merge:true }); }
+      }).catch(e=>alert(e.message));
+      // 5) week.times 정리
+      const time = sid.split('-').slice(1).join('-');
+      await pruneWeekTimeIfEmpty(weekId, time);
+    }
+
+    async function leaveEvent(weekId, sid){
+      const ref = doc(db, 'weeks', weekId, 'slots', sid);
+      await runTransaction(db, async (tx)=>{
+        const snap = await tx.get(ref); if(!snap.exists()) return;
+        let events = (snap.data().events||[]);
+        // 내 uid 제거
+        let touched=false;
+        for(const e of events){
+          const before=e.members||[];
+          const after=before.filter(m=>m.uid!==CURRENT_USER.uid);
+          if(after.length!==before.length){ e.members=after; touched=true; }
+        }
+        // 멤버 0 이벤트 삭제
+        events = events.filter(e => (e.members?.length||0) > 0);
+        if(!touched && events.length>0) return; // 변경 없음
+        if(events.length===0){ tx.delete(ref); } else { tx.set(ref, { events }, { merge:true }); }
+      }).catch(e=>console.warn(e));
+      // 주간 times에서 비었으면 제거
+      const time = sid.split('-').slice(1).join('-');
+      await pruneWeekTimeIfEmpty(weekId, time);
+    }
+
+    function escapeHtml(s){
+      return String(s||'').replace(/[&<>"']/g, c=>({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
+
+    async function deleteEvent(weekId, sid, eventId){
+      const ref = doc(db,'weeks',weekId,'slots',sid);
+      await runTransaction(db, async (tx)=>{
+        const snap = await tx.get(ref); if(!snap.exists()) return;
+        let events = (snap.data().events||[]).filter(e=>e.id!==eventId);
+        if(events.length===0){ tx.delete(ref); } else { tx.set(ref,{ events },{ merge:true }); }
+      }).catch(e=>alert(e.message));
+      const time = sid.split('-').slice(1).join('-');
+      await pruneWeekTimeIfEmpty(weekId, time);
+    }
+  </script>
+</body>
+</html>
