@@ -137,7 +137,7 @@
           </div>
           <div class="field">
             <label>시간</label>
-            <input type="time" id="eventTime" value="20:00" step="1800" class="no-native-icon" />
+            $1300$2 class="no-native-icon" />
             <button id="btnTimePicker" class="picker-btn" title="시간 선택">🕒</button>
           </div>
           <div class="grow"></div>
@@ -250,14 +250,19 @@
     // 로컬 저장 닉
     nickEl.value = localStorage.getItem('party_nick') || '';
 
-    // 유틸
+    // 유틸 (KST 기준 날짜 도우미)
     const pad2=n=>String(n).padStart(2,'0');
+    const kstFmt = new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit' });
+    const kstYMD = (date=new Date()) => kstFmt.format(date);
+    const dateFromYMD = (ymd)=>{ const [y,m,d] = ymd.split('-').map(Number); return new Date(y, m-1, d); };
+    function todayInKST(){ return dateFromYMD(kstYMD()); }
     function mondayOf(date){ const d = new Date(date); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); d.setHours(0,0,0,0); return d; }
-    function weekIdFromDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+    function weekIdFromDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 
-    // 초기 주간
-    const defMon = mondayOf(new Date());
-    weekStartEl.valueAsDate = defMon;
+    // 초기 주간 (대한민국 시간 기준)
+    const TODAY_KST = todayInKST();
+    const defMon = mondayOf(TODAY_KST);
+    weekStartEl.value = kstYMD(defMon);
     let CURRENT_WEEK_MON = defMon;
     let CURRENT_WEEK_ID  = weekIdFromDate(defMon);
     let CURRENT_USER = null;
@@ -311,8 +316,16 @@
 
     // 주간 범위로 파티 생성 날짜 제한
     function syncEventDateRange(){
-      const min=new Date(CURRENT_WEEK_MON); const max=new Date(CURRENT_WEEK_MON); max.setDate(max.getDate()+6);
-      eventDateEl.min = `${min.getFullYear()}-${pad2(min.getMonth()+1)}-${pad2(min.getDate())}`;
+      const min=new Date(CURRENT_WEEK_MON);
+      const max=new Date(CURRENT_WEEK_MON); max.setDate(max.getDate()+6);
+      const minStr = `${min.getFullYear()}-${pad2(min.getMonth()+1)}-${pad2(min.getDate())}`;
+      const maxStr = `${max.getFullYear()}-${pad2(max.getMonth()+1)}-${pad2(max.getDate())}`;
+      eventDateEl.min = minStr; eventDateEl.max = maxStr;
+      if(!eventDateEl.value){
+        const todayStr = kstYMD();
+        eventDateEl.value = (todayStr >= minStr && todayStr <= maxStr) ? todayStr : minStr;
+      }
+    }-${pad2(min.getMonth()+1)}-${pad2(min.getDate())}`;
       eventDateEl.max = `${max.getFullYear()}-${pad2(max.getMonth()+1)}-${pad2(max.getDate())}`;
       if(!eventDateEl.value){ eventDateEl.valueAsDate = new Date(CURRENT_WEEK_MON); }
     }
@@ -577,8 +590,9 @@
 
     function escapeHtml(s){
       return String(s||'').replace(/[&<>"']/g, c=>({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'
       }[c]));
+    }[c]));
     }
 
     async function deleteEvent(weekId, sid, eventId){
