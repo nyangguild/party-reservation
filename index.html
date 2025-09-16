@@ -6,7 +6,7 @@
   <title>주간 파티 예약판 (동시간대 최대 3파티)</title>
   <style>
     :root{
-      --bg:#0b0f14;--card:#121821;--muted:#8aa1b2;--accent:#64a9ff;--accentBg:#0e2236;--ok:#2ecc71;--warn:#ffb84d;--danger:#ff6b6b;--line:#1f2a36;
+      --bg:#0b0f14;--card:#121821;--muted:#8aa1b2;--accent:#64a9ff;--accentBg:#0e2236;--ok:#2ecc71;--warn:#ffb84d;--danger:#ff6b6b;--line:#1f2a36;--btn-h:34px;--btn-pad-x:10px;
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Pretendard,Apple SD Gothic Neo,'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--bg);color:#e6eef5}
@@ -16,7 +16,7 @@
     .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
     .section-head{margin-bottom:14px}
     label{font-size:14px;color:#8aa1b2}
-    input,select,button{height:36px;border-radius:10px;border:1px solid var(--line);background:#0f141b;color:#e6eef5;padding:0 10px}
+    input,select,button{height:var(--btn-h);border-radius:10px;border:1px solid var(--line);background:#0f141b;color:#e6eef5;padding:0 10px}
     /* 하늘색 강조 스타일 */
     input[type="date"], input[type="time"], select{border-color:var(--accent);background:var(--accentBg)}
     input[type="date"]:focus, input[type="time"]:focus, select:focus{outline:none;box-shadow:0 0 0 3px rgba(100,169,255,.25)}
@@ -26,9 +26,9 @@
     .no-native-icon::-webkit-clear-button{display:none}
     .no-native-icon{color:#e6eef5}
 
-    .picker-btn{height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#00172e;font-weight:700;cursor:pointer}
+    .picker-btn{height:var(--btn-h);padding:0 var(--btn-pad-x);border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#00172e;font-weight:700;cursor:pointer}
     /* 아이콘 전용(정사각) 버튼 */
-    .icon-btn{width:36px;height:36px;padding:0;display:grid;place-items:center;font-size:16px;min-width:36px}
+    .icon-btn{width:var(--btn-h);height:var(--btn-h);min-width:var(--btn-h);padding:0;display:grid;place-items:center;font-size:15px}
     .picker-btn:active{transform:translateY(1px)}
 
     button{cursor:pointer}
@@ -110,7 +110,7 @@
   @media (max-width: 520px){
     .rowline{ gap:12px; }
     .field{ flex-wrap: wrap; align-items:center; }
-    .field label{ white-space:nowrap; word-break:keep-all; display:inline-flex; align-items:center; height:36px; line-height:1; }
+    .field label{ white-space:nowrap; word-break:keep-all; display:inline-flex; align-items:center; height:var(--btn-h); line-height:1; }
     /* 텍스트 버튼만 최소너비 유지 */
     button.primary{ white-space:nowrap; word-break:keep-all; min-width:96px; flex-shrink:0 }
     .picker-btn{ flex-shrink:0; }
@@ -135,9 +135,7 @@
   /* 위치 조정용 헬퍼 */
   #createEvent.ml-auto{ margin-left:auto }
   /* 데스크톱에서도 아이콘 버튼이 길어지는 문제 강제 방지(아이디 기준) */
-  #btnWeekPicker,#btnWeekPicker2,#btnDatePicker,#btnTimePicker,#prevWeek,#nextWeek{
-    width:36px;min-width:36px;height:36px;padding:0;display:grid;place-items:center;flex:0 0 36px;
-  }
+  #btnWeekPicker,#btnWeekPicker2,#btnDatePicker,#btnTimePicker,#prevWeek,#nextWeek{width:var(--btn-h);min-width:var(--btn-h);height:var(--btn-h);padding:0;display:grid;place-items:center;flex:0 0 var(--btn-h);}
   @media (max-width:520px){
     #btnWeekPicker,#btnWeekPicker2,#btnDatePicker,#btnTimePicker,#prevWeek,#nextWeek{
       width:40px;min-width:40px;height:40px;flex:0 0 40px;
@@ -147,6 +145,8 @@
   @media (max-width:520px){
     #goWeek2{ height:36px; padding:0 10px; font-size:13px; min-width:72px }
   }
+  /* 버튼 공통 높이(모바일에서 변수만 바꿔 전체 통일) */
+  @media (max-width:520px){ :root{ --btn-h:36px } .icon-btn{ font-size:16px } #goWeek2{ height:var(--btn-h) } }
 </style>
   <meta name="theme-color" content="#0b0f14" />
   <!-- 카카오톡 미리보기(OG) -->
