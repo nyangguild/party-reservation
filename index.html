@@ -137,7 +137,7 @@
           </div>
           <div class="field">
             <label>시간</label>
-            $1300$2 class="no-native-icon" />
+            <input type="time" id="eventTime" value="20:00" step="300" class="no-native-icon" />
             <button id="btnTimePicker" class="picker-btn" title="시간 선택">🕒</button>
           </div>
           <div class="grow"></div>
@@ -590,8 +590,9 @@
 
     function escapeHtml(s){
       return String(s||'').replace(/[&<>"']/g, c=>({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\u0027':'&#39;'
       }[c]));
+    }[c]));
     }[c]));
     }
 
