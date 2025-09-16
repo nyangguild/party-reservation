@@ -137,7 +137,7 @@
           </div>
           <div class="field">
             <label>시간</label>
-            <input type="time" id="eventTime" value="20:00" step="300" class="no-native-icon" />
+            <select id="eventTime" class="no-native-icon"></select>
             <button id="btnTimePicker" class="picker-btn" title="시간 선택">🕒</button>
           </div>
           <div class="grow"></div>
@@ -284,13 +284,6 @@
     btnWeekPicker2.onclick = ()=> safeShow(weekStart2);
     btnDatePicker.onclick = ()=> safeShow(eventDateEl);
     btnTimePicker.onclick = ()=> safeShow(eventTimeEl);
-    // 시간 입력 5분 단위로 강제 스냅
-    eventTimeEl.setAttribute('step','300');
-    function snapTimeToStep(){
-      try{ eventTimeEl.value = normalizeTimeStr(eventTimeEl.value); }catch(_e){}
-    }
-    eventTimeEl.addEventListener('change', snapTimeToStep);
-    eventTimeEl.addEventListener('blur', snapTimeToStep);
 
     // ---------- 주간 이동 ----------
     goWeekBtn.onclick = ()=>{ const picked = weekStartEl.valueAsDate; if(!picked){ alert('날짜를 선택하세요.'); return; } setWeekByDate(picked); };
@@ -335,17 +328,23 @@
       }
     }
 
-    // 5분 단위 시간 정규화
-    function normalizeTimeStr(t){
-      if(!t || typeof t!=='string') return '20:00';
-      const parts = t.split(':');
-      let h = parseInt(parts[0]||'0',10); if(Number.isNaN(h)) h = 0;
-      let m = parseInt(parts[1]||'0',10); if(Number.isNaN(m)) m = 0;
-      const step = 5;
-      m = Math.round(m/step)*step;
-      if(m>=60){ m-=60; h=(h+1)%24; }
-      return `${pad2(h)}:${pad2(m)}`;
+    // 5분 단위 셀렉트용 옵션 생성
+    function labelAMPM(h){ return h<12 ? '오전' : '오후'; }
+    function displayHour(h){ let hh=h%12; if(hh===0) hh=12; return pad2(hh); }
+    function buildTimeOptions(){
+      eventTimeEl.innerHTML='';
+      for(let h=0; h<24; h++){
+        for(let m=0; m<60; m+=5){
+          const value = `${pad2(h)}:${pad2(m)}`;
+          const opt = document.createElement('option');
+          opt.value = value;
+          opt.textContent = `${labelAMPM(h)} ${displayHour(h)}:${pad2(m)}`;
+          eventTimeEl.appendChild(opt);
+        }
+      }
+      if(!eventTimeEl.value) eventTimeEl.value = '20:00';
     }
+    buildTimeOptions();
 
     // ---------- 파티 생성 ----------
     createEventBtn.onclick = async ()=>{
