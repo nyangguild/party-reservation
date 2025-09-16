@@ -82,7 +82,7 @@
     .credit strong{color:#ffffff}
     /* 주간 요약 스트립 */
     .week-strip{display:flex;gap:8px;overflow-x:auto;padding:8px 4px;margin-bottom:8px}
-    .ws-day{flex:1;min-width:120px;background:#0f141b;border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+    .ws-day{flex:1;min-width:120px;min-height:84px;height:auto;background:#0f141b;border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
     .ws-day.active{outline:2px solid var(--accent)}
     .ws-day.mine{border-color:#69d3ff;box-shadow:0 0 0 1px rgba(105,211,255,.25) inset}
     .ws-day .head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#cfe3f2}
@@ -92,6 +92,7 @@
     .mini-badge.abyss{background:linear-gradient(180deg,#0e2a40,#091b2b);border-color:#2a435a;color:#a8ddff}
     .mini-badge.raid{background:linear-gradient(180deg,#3a2a12,#1a1410);border-color:#5a4222;color:#ffd68a}
     .ws-day .dot{font-size:10px;margin-left:auto;color:#69d3ff}
+    .ws-day .date{font-size:11px;color:#99b2c7;border:1px solid var(--line);padding:1px 6px;border-radius:999px;background:#0f141b}
     /* 내가 참가한 파티 하이라이트 */
     .event.mine{
       border-color:#69d3ff;
@@ -530,7 +531,7 @@
         const dateObj=new Date(CURRENT_WEEK_MON); dateObj.setDate(CURRENT_WEEK_MON.getDate()+d);
         const dateStr=`${pad2(dateObj.getMonth()+1)}-${pad2(dateObj.getDate())}`;
         const {total, abyss, raid, mine} = summary[d];
-        const el = document.createElement('button');
+        const el = document.createElement('div'); el.setAttribute('role','button'); el.tabIndex = 0; el.addEventListener('keydown',(e)=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); setActiveDay(d);} });
         el.className = 'ws-day' + (d===ACTIVE_DAY?' active':'') + (mine?' mine':'');
         el.innerHTML = `
           <div class="head"><span>${DAYS[d]}</span><span class="date">${dateStr}</span></div>
