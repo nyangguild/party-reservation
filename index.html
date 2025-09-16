@@ -316,18 +316,17 @@
 
     // 주간 범위로 파티 생성 날짜 제한
     function syncEventDateRange(){
-      const min=new Date(CURRENT_WEEK_MON);
-      const max=new Date(CURRENT_WEEK_MON); max.setDate(max.getDate()+6);
+      const min = new Date(CURRENT_WEEK_MON);
+      const max = new Date(CURRENT_WEEK_MON);
+      max.setDate(max.getDate() + 6);
       const minStr = `${min.getFullYear()}-${pad2(min.getMonth()+1)}-${pad2(min.getDate())}`;
       const maxStr = `${max.getFullYear()}-${pad2(max.getMonth()+1)}-${pad2(max.getDate())}`;
-      eventDateEl.min = minStr; eventDateEl.max = maxStr;
+      eventDateEl.min = minStr;
+      eventDateEl.max = maxStr;
       if(!eventDateEl.value){
         const todayStr = kstYMD();
         eventDateEl.value = (todayStr >= minStr && todayStr <= maxStr) ? todayStr : minStr;
       }
-    }-${pad2(min.getMonth()+1)}-${pad2(min.getDate())}`;
-      eventDateEl.max = `${max.getFullYear()}-${pad2(max.getMonth()+1)}-${pad2(max.getDate())}`;
-      if(!eventDateEl.value){ eventDateEl.valueAsDate = new Date(CURRENT_WEEK_MON); }
     }
 
     // ---------- 파티 생성 ----------
