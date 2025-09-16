@@ -134,6 +134,15 @@
   }
   /* 위치 조정용 헬퍼 */
   #createEvent.ml-auto{ margin-left:auto }
+  /* 데스크톱에서도 아이콘 버튼이 길어지는 문제 강제 방지(아이디 기준) */
+  #btnWeekPicker,#btnWeekPicker2,#btnDatePicker,#btnTimePicker,#prevWeek,#nextWeek{
+    width:36px;min-width:36px;height:36px;padding:0;display:grid;place-items:center;flex:0 0 36px;
+  }
+  @media (max-width:520px){
+    #btnWeekPicker,#btnWeekPicker2,#btnDatePicker,#btnTimePicker,#prevWeek,#nextWeek{
+      width:40px;min-width:40px;height:40px;flex:0 0 40px;
+    }
+  }
 </style>
   <meta name="theme-color" content="#0b0f14" />
   <!-- 카카오톡 미리보기(OG) -->
