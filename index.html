@@ -147,6 +147,13 @@
   }
   /* 버튼 공통 높이(모바일에서 변수만 바꿔 전체 통일) */
   @media (max-width:520px){ :root{ --btn-h:36px } .icon-btn{ font-size:16px } #goWeek2{ height:var(--btn-h) } }
+  /* 모바일 컴팩트 튜닝: 아이콘 작게, 한 줄 유지 */
+  @media (max-width:520px){
+    :root{ --btn-h:34px }
+    .icon-btn{ font-size:14px }
+    #goWeek2{ height:var(--btn-h); padding:0 8px; font-size:12px; min-width:60px }
+    #weekStart2{ max-width:140px }
+  }
 </style>
   <meta name="theme-color" content="#0b0f14" />
   <!-- 카카오톡 미리보기(OG) -->
