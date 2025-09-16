@@ -154,6 +154,28 @@
     #goWeek2{ height:var(--btn-h); padding:0 8px; font-size:12px; min-width:60px }
     #weekStart2{ max-width:140px }
   }
+  /* 닉네임 행: 컨테이너 쿼리 + Grid로 안정적 1줄 배치 */
+  .nick-row{ display:grid; grid-template-columns:max-content minmax(0,1fr) auto; gap:8px; align-items:center; container-type:inline-size; }
+  .nick-row label{ white-space:nowrap }
+  .nick-row input#nick{ min-width:0; width:100% }
+  .nick-row .primary{ height:var(--btn-h); padding:0 clamp(6px,2.2vw,10px); font-size:clamp(12px,3vw,14px); min-width:96px }
+  .nick-row .primary .lbl-short{ display:none }
+  /* 컨테이너가 좁아지면: 라벨 위로, 아래줄은 입력+버튼 한 줄 */
+  @container (max-width:480px){
+    .nick-row{ grid-template-columns:minmax(0,1fr) auto }
+    .nick-row label{ grid-column:1 / -1 }
+  }
+  /* 더 좁을 때: 버튼 텍스트 축약 */
+  @container (max-width:360px){
+    .nick-row .primary .lbl-full{ display:none }
+    .nick-row .primary .lbl-short{ display:inline }
+    .nick-row .primary{ min-width:56px }
+  }
+  /* 컨테이너 쿼리 미지원 브라우저용 뷰포트 폴백 */
+  @media (max-width:520px){
+    .nick-row{ grid-template-columns:minmax(0,1fr) auto }
+    .nick-row label{ grid-column:1 / -1 }
+  }
 </style>
   <meta name="theme-color" content="#0b0f14" />
   <!-- 카카오톡 미리보기(OG) -->
@@ -170,10 +192,13 @@
     <!-- 기본 정보 -->
     <div class="card">
       <div class="row">
-        <div class="field">
+        <div class="field nick-row">
           <label>별명/닉네임</label>
-          <input id="nick" placeholder="인게임 닉네임" style="width:180px" />
-          <button id="saveNick" class="primary">닉네임 저장</button>
+          <input id="nick" placeholder="인게임 닉네임" />
+          <button id="saveNick" class="primary" aria-label="닉네임 저장">
+            <span class="lbl-full">닉네임 저장</span>
+            <span class="lbl-short" aria-hidden="true">저장</span>
+          </button>
         </div>
         <div class="field" id="topWeekControls">
           <label>주간 시작일(월요일)</label>
