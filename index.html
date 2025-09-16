@@ -27,6 +27,8 @@
     .no-native-icon{color:#e6eef5}
 
     .picker-btn{height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#00172e;font-weight:700;cursor:pointer}
+    /* 아이콘 전용(정사각) 버튼 */
+    .icon-btn{width:36px;height:36px;padding:0;display:grid;place-items:center;font-size:16px;min-width:36px}
     .picker-btn:active{transform:translateY(1px)}
 
     button{cursor:pointer}
@@ -107,6 +109,21 @@
     /* === Responsive (모바일 우선) === */
   @media (max-width: 520px){
     .rowline{ gap:12px; }
+    .field{ flex-wrap: wrap; align-items:flex-start; }
+    .field label{ white-space:nowrap; word-break:keep-all; }
+    /* 텍스트 버튼만 최소너비 유지 */
+    button.primary{ white-space:nowrap; word-break:keep-all; min-width:96px; flex-shrink:0 }
+    .picker-btn{ flex-shrink:0; }
+    .icon-btn{ width:40px; height:40px; font-size:18px; min-width:40px }
+    #ampmSelect{ width:84px }
+    #hourSelect, #minSelect{ width:68px }
+    .ws-day{ min-width:110px }
+  }
+  @media (max-width: 360px){
+    #createEvent.mobile-fullwidth{ width:100%; margin-left:0 }
+  }
+  /* 위치 조정용 헬퍼 */
+  #createEvent.ml-auto{ margin-left:auto }
     .picker-btn, button.primary{ white-space:nowrap; word-break:keep-all; min-width:96px; flex-shrink:0 }
     #ampmSelect{ width:84px }
     #hourSelect, #minSelect{ width:68px }
@@ -142,7 +159,7 @@
           <label>주간 시작일(월요일)</label>
           <input type="date" id="weekStart" class="no-native-icon" />
           <button id="goWeek" class="primary">해당 주 보기</button>
-          <button id="btnWeekPicker" class="picker-btn" title="주간 선택">📅</button>
+          <button id="btnWeekPicker" class="picker-btn icon-btn" title="주간 선택">📅</button>
         </div>
       </div>
       <div class="hint" style="margin-top:8px">닉네임을 저장하면 클릭 한 번으로 참가/취소가 됩니다. 이 화면은 선택한 ‘해당 주’의 파티만 보여줍니다.</div>
@@ -159,7 +176,7 @@
           <div class="field">
             <label>날짜</label>
             <input type="date" id="eventDate" class="no-native-icon" />
-            <button id="btnDatePicker" class="picker-btn" title="날짜 선택">📅</button>
+            <button id="btnDatePicker" class="picker-btn icon-btn" title="날짜 선택">📅</button>
           </div>
           <div class="field">
             <label>시간</label>
@@ -169,7 +186,7 @@
             </select>
             <select id="hourSelect" class="no-native-icon"></select>
             <select id="minSelect" class="no-native-icon"></select>
-            <button id="btnTimePicker" class="picker-btn" title="시간 선택">🕒</button>
+            <button id="btnTimePicker" class="picker-btn icon-btn" title="시간 선택">🕒</button>
           </div>
           <div class="grow"></div>
           <button id="createEvent" class="primary">파티 생성</button>
@@ -202,11 +219,11 @@
       <div class="row section-head" style="justify-content:space-between; margin-bottom:8px">
         <strong>이번 주 파티 목록</strong>
         <div class="row" style="gap:8px;align-items:center">
-          <button id="prevWeek" class="picker-btn" title="이전 주">◀</button>
+          <button id="prevWeek" class="picker-btn icon-btn" title="이전 주">◀</button>
           <input type="date" id="weekStart2" class="no-native-icon" />
-          <button id="btnWeekPicker2" class="picker-btn" title="날짜 선택">📅</button>
+          <button id="btnWeekPicker2" class="picker-btn icon-btn" title="날짜 선택">📅</button>
           <button id="goWeek2" class="primary">이 주 보기</button>
-          <button id="nextWeek" class="picker-btn" title="다음 주">▶</button>
+          <button id="nextWeek" class="picker-btn icon-btn" title="다음 주">▶</button>
           <span class="muted" id="weekLabel"></span>
         </div>
       </div>
