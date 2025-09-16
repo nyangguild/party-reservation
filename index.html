@@ -176,6 +176,34 @@
     .nick-row{ grid-template-columns:minmax(0,1fr) auto }
     .nick-row label{ grid-column:1 / -1 }
   }
+  /* nick-row fix v2: grid-areas로 배치 안정화 (기본: 2줄, 넓으면 1줄) */
+  .nick-row{ display:grid; gap:8px; align-items:center; container-type:inline-size;
+    grid-template-columns:minmax(140px,1fr) auto;
+    grid-template-areas:
+      "label label"
+      "input button";
+  }
+  .nick-row label{ grid-area:label; white-space:nowrap }
+  .nick-row input#nick{ grid-area:input; min-width:120px; width:100% }
+  .nick-row .primary{ grid-area:button; height:var(--btn-h); padding:0 clamp(6px,2.2vw,10px); font-size:clamp(12px,3vw,14px); min-width:64px }
+  .nick-row .primary .lbl-short{ display:none }
+
+  /* 넓은 컨테이너에서는 1줄로: 라벨 | 입력 | 버튼 */
+  @container (min-width:640px){
+    .nick-row{ grid-template-columns:max-content 1fr auto; grid-template-areas:"label input button" }
+  }
+
+  /* 아주 좁은 컨테이너: 버튼 텍스트 축약 & 최소폭 더 줄이기 */
+  @container (max-width:360px){
+    .nick-row .primary .lbl-full{ display:none }
+    .nick-row .primary .lbl-short{ display:inline }
+    .nick-row .primary{ min-width:48px; padding:0 8px }
+  }
+
+  /* 컨테이너 쿼리 미지원 브라우저 폴백: 뷰포트 기준으로 동일 동작 */
+  @media (min-width:640px){
+    .nick-row{ grid-template-columns:max-content 1fr auto; grid-template-areas:"label input button" }
+  }
 </style>
   <meta name="theme-color" content="#0b0f14" />
   <!-- 카카오톡 미리보기(OG) -->
