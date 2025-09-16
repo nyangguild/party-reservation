@@ -251,13 +251,13 @@
     nickEl.value = localStorage.getItem('party_nick') || '';
 
     // 유틸 (KST 기준 날짜 도우미)
-    const pad2=n=>String(n).padStart(2,'0');
+    const pad2 = n => String(n).padStart(2,'0');
     const kstFmt = new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit' });
-    const kstYMD = (date=new Date()) => kstFmt.format(date);
-    const dateFromYMD = (ymd)=>{ const [y,m,d] = ymd.split('-').map(Number); return new Date(y, m-1, d); };
+    const kstYMD = (date = new Date()) => kstFmt.format(date);
+    const dateFromYMD = (ymd) => { const [y,m,d] = (ymd||'').split('-').map(Number); return new Date(y||1970, (m||1)-1, d||1); };
     function todayInKST(){ return dateFromYMD(kstYMD()); }
     function mondayOf(date){ const d = new Date(date); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); d.setHours(0,0,0,0); return d; }
-    function weekIdFromDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+    function weekIdFromDate(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 
     // 초기 주간 (대한민국 시간 기준)
     const TODAY_KST = todayInKST();
