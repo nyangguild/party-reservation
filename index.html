@@ -80,6 +80,18 @@
     .credit{margin:4px 0 12px 0;display:flex;align-items:center;gap:8px;color:#cfe3f2;font-size:13px}
     .credit .pill{padding:4px 10px;border-radius:999px;background:linear-gradient(180deg,#0e2a40,#091b2b);border:1px solid #2a435a;color:#a8ddff;font-weight:700}
     .credit strong{color:#ffffff}
+    /* 주간 요약 스트립 */
+    .week-strip{display:flex;gap:8px;overflow-x:auto;padding:8px 4px;margin-bottom:8px}
+    .ws-day{flex:1;min-width:120px;background:#0f141b;border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+    .ws-day.active{outline:2px solid var(--accent)}
+    .ws-day.mine{border-color:#69d3ff;box-shadow:0 0 0 1px rgba(105,211,255,.25) inset}
+    .ws-day .head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#cfe3f2}
+    .ws-day .total{font-size:18px;font-weight:800;color:#e6eef5}
+    .mini-badges{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .mini-badge{font-size:11px;padding:2px 6px;border-radius:999px;border:1px solid var(--line)}
+    .mini-badge.abyss{background:linear-gradient(180deg,#0e2a40,#091b2b);border-color:#2a435a;color:#a8ddff}
+    .mini-badge.raid{background:linear-gradient(180deg,#3a2a12,#1a1410);border-color:#5a4222;color:#ffd68a}
+    .ws-day .dot{font-size:10px;margin-left:auto;color:#69d3ff}
     /* 내가 참가한 파티 하이라이트 */
     .event.mine{
       border-color:#69d3ff;
@@ -184,6 +196,7 @@
           <span class="muted" id="weekLabel"></span>
         </div>
       </div>
+      <div id="weekStrip" class="week-strip"></div>
       <div id="eventsContainer" class="events"></div>
       <div class="hint" id="emptyHint" style="display:none; margin-top:8px">아직 생성된 파티가 없습니다. 위에서 파티를 만들어보세요.</div>
     </div>
@@ -240,6 +253,7 @@
 
     const eventsContainer = document.getElementById('eventsContainer');
     const emptyHint = document.getElementById('emptyHint');
+    const weekStrip = document.getElementById('weekStrip');
 
     // 분류/던전/난이도 프리셋
     const DUNGEONS = {
@@ -272,6 +286,7 @@
     let CURRENT_WEEK_MON = defMon;
     let CURRENT_WEEK_ID  = weekIdFromDate(defMon);
     let CURRENT_USER = null;
+    let ACTIVE_DAY = 0;
 
     // ---------- 인증 ----------
     signInAnonymously(auth).catch(e=>{ console.error(e); alert('로그인 실패: '+e.code); });
@@ -405,6 +420,8 @@
       weekLabel.textContent = `${CURRENT_WEEK_MON.getFullYear()}-${pad2(CURRENT_WEEK_MON.getMonth()+1)}-${pad2(CURRENT_WEEK_MON.getDate())} ~ ${sun.getFullYear()}-${pad2(sun.getMonth()+1)}-${pad2(sun.getDate())}`;
       if(weekStart2) weekStart2.valueAsDate = CURRENT_WEEK_MON;
       syncEventDateRange();
+      ACTIVE_DAY = defaultActiveDayForWeek();
+      renderWeekStrip();
 
       const wRef = doc(db, 'weeks', CURRENT_WEEK_ID); setDoc(wRef, { times: [] }, { merge: true });
       // 빈 times 자동 복구(기존 슬롯에서 수집)
@@ -447,9 +464,10 @@
     }
 
     function attachSlotListeners(times){
-      for(const u of slotUnsubs) try{u();}catch(e){} slotUnsubs = [];
+      for(const u of slotUnsubs) try{u();}catch(e){}
+      slotUnsubs = [];
       SLOT_DATA.clear();
-      if(!times || times.length===0){ renderEvents(); return; }
+      if(!times || times.length===0){ renderWeekStrip(); renderEvents(); return; }
       for(let d=0; d<7; d++){
         for(const t of [...times].sort()){
           const sid = `${d}-${t}`;
@@ -457,6 +475,7 @@
           const unsub = onSnapshot(sRef, (snap)=>{
             const data = snap.exists()? snap.data(): { events: [] };
             SLOT_DATA.set(`${d}|${t}`, data.events||[]);
+            renderWeekStrip();
             renderEvents();
           });
           slotUnsubs.push(unsub);
@@ -478,88 +497,129 @@
       return '';
     }
 
-    function renderEvents(){
-      eventsContainer.innerHTML='';
-      let any=false;
-      for(let d=0; d<7; d++){
-        const list=[];
-        for(const [key, events] of SLOT_DATA.entries()){
-          const [dd, time] = key.split('|');
-          if(Number(dd)===d && Array.isArray(events) && events.length>0){ list.push({ time, events }); }
-        }
-        if(list.length===0) continue; any=true; list.sort((a,b)=> a.time.localeCompare(b.time));
+    function defaultActiveDayForWeek(){
+      const mon = CURRENT_WEEK_MON;
+      const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+      const today = todayInKST();
+      if(today>=mon && today<=sun){
+        return Math.floor((today - mon)/86400000);
+      }
+      return 0;
+    }
 
-        const dayEl=document.createElement('section'); dayEl.className='day';
+    function summarizeByDay(){
+      const res = Array.from({length:7},()=>({total:0,abyss:0,raid:0,mine:false}));
+      for(const [key, events] of SLOT_DATA.entries()){
+        const [ddStr] = key.split('|'); const dd = Number(ddStr);
+        if(!Array.isArray(events)) continue;
+        for(const ev of events){
+          const cat = ev.cat || (ev.type==='abyss'?'abyss':'raid');
+          if(cat==='abyss') res[dd].abyss++; else res[dd].raid++;
+          res[dd].total++;
+          if(CURRENT_USER && (ev.members||[]).some(m=>m.uid===CURRENT_USER.uid)) res[dd].mine = true;
+        }
+      }
+      return res;
+    }
+
+    function renderWeekStrip(){
+      if(!weekStrip) return;
+      const summary = summarizeByDay();
+      weekStrip.innerHTML='';
+      for(let d=0; d<7; d++){
         const dateObj=new Date(CURRENT_WEEK_MON); dateObj.setDate(CURRENT_WEEK_MON.getDate()+d);
         const dateStr=`${pad2(dateObj.getMonth()+1)}-${pad2(dateObj.getDate())}`;
-        dayEl.innerHTML = `<header><h2>${DAYS[d]} <span class="date">${dateStr}</span></h2></header>`;
-        const slotsEl=document.createElement('div'); slotsEl.className='slots';
-
-        for(const item of list){
-          const slotEl=document.createElement('div'); slotEl.className='slot';
-          slotEl.innerHTML = `<div class="time">${item.time}</div>`;
-          for(const ev of item.events){
-            const cat = ev.cat || (ev.type==='abyss'?'abyss':'raid');
-            const dg  = ev.dg  || (ev.type==='abyss'?'mas':(ev.type==='glas'?'glas':'succ'));
-            const diffCls = diffClass(ev.diff);
-            const full = (ev.members?.length||0) >= (ev.cap||4);
-            const host = ev.hostNick || (ev.members?.[0]?.nick || '파티');
-            const title = ev.title || `${host}의 파티`;
-
-            const isMine = !!(CURRENT_USER && (ev.members||[]).some(m=>m.uid===CURRENT_USER.uid));
-
-            const names = (ev.members||[]).map(m=>`<span class=\"chip\">${escapeHtml(m.nick)}</span>`).join('') || '<span class=\"muted\">(비어있음)</span>';
-            const evEl=document.createElement('div');
-            evEl.className = 'event' + (full?' full':'') + (isMine?' mine':'');
-
-            evEl.innerHTML = `
-              <div>
-                <div class=\"label\">
-                  <span class=\"badge ${cat==='abyss'?'cat-abyss':'cat-raid'}\">${labelCat(cat)}</span>
-                  <span class=\"badge ${dungeonClass(dg)}\">${labelDungeon(dg)}</span>
-                  <span class=\"badge diff ${diffCls}\">${ev.diff}</span>
-                  <span class=\"count\">${(ev.members?.length||0)}/${ev.cap||4}</span>
-                  ${isMine ? '<span class=\"badge mine\">내 파티</span>' : ''}
-                </div>
-                <div class=\"title\">${escapeHtml(title)}</div>
-                <div class=\"names\">${names}</div>
-              </div>
-              <div class=\"btns\">
-                <button class=\"btn-join\">참가</button>
-                <button class=\"btn-leave\">취소</button>
-              </div>`;
-
-            const joinBtn = evEl.querySelector('.btn-join');
-            const leaveBtn = evEl.querySelector('.btn-leave');
-
-            joinBtn.addEventListener('click', ()=>{
-              const nick=(nickEl.value||'').trim(); if(!nick){ alert('닉네임을 먼저 저장하세요.'); return; }
-              const sid = `${d}-${item.time}`; joinEvent(CURRENT_WEEK_ID, sid, ev.id, ev.cap||4);
-            });
-            leaveBtn.addEventListener('click', ()=>{
-              const sid = `${d}-${item.time}`; leaveEvent(CURRENT_WEEK_ID, sid);
-            });
-
-            if(isMine){ joinBtn.disabled = true; joinBtn.style.opacity='0.6'; joinBtn.title='이미 참가한 파티입니다'; }
-            if(full && !isMine){ joinBtn.disabled = true; joinBtn.style.opacity='0.6'; joinBtn.title='정원이 가득 찼습니다'; }
-
-            if(ev.hostUid && CURRENT_USER && ev.hostUid===CURRENT_USER.uid){
-              const delBtn = document.createElement('button');
-              delBtn.className='btn-delete'; delBtn.textContent='삭제';
-              evEl.querySelector('.btns').appendChild(delBtn);
-              delBtn.addEventListener('click', ()=>{
-                const sid = `${d}-${item.time}`; deleteEvent(CURRENT_WEEK_ID, sid, ev.id);
-              });
-            }
-
-            slotEl.appendChild(evEl);
-          }
-          slotsEl.appendChild(slotEl);
-        }
-        dayEl.appendChild(slotsEl);
-        eventsContainer.appendChild(dayEl);
+        const {total, abyss, raid, mine} = summary[d];
+        const el = document.createElement('button');
+        el.className = 'ws-day' + (d===ACTIVE_DAY?' active':'') + (mine?' mine':'');
+        el.innerHTML = `
+          <div class="head"><span>${DAYS[d]}</span><span class="date">${dateStr}</span></div>
+          <div class="total">${total}</div>
+          <div class="mini-badges">
+            <span class="mini-badge abyss">어 ${abyss}</span>
+            <span class="mini-badge raid">레 ${raid}</span>
+            ${mine?'<span class="dot" title="내 파티 있음">●</span>':''}
+          </div>`;
+        el.addEventListener('click', ()=> setActiveDay(d));
+        weekStrip.appendChild(el);
       }
-      emptyHint.style.display = any? 'none':'block';
+    }
+
+    function setActiveDay(d){ ACTIVE_DAY=d; renderWeekStrip(); renderEvents(); }
+
+    function renderEvents(){
+      eventsContainer.innerHTML='';
+      const d = ACTIVE_DAY;
+      const list=[];
+      for(const [key, events] of SLOT_DATA.entries()){
+        const [dd, time] = key.split('|');
+        if(Number(dd)===d && Array.isArray(events) && events.length>0){ list.push({ time, events }); }
+      }
+      if(list.length===0){
+        emptyHint.textContent = '해당 요일에는 아직 생성된 파티가 없습니다. 위에서 파티를 만들어보세요.';
+        emptyHint.style.display='block';
+        return;
+      }
+      emptyHint.style.display='none';
+      list.sort((a,b)=> a.time.localeCompare(b.time));
+
+      const dayEl=document.createElement('section'); dayEl.className='day';
+      const dateObj=new Date(CURRENT_WEEK_MON); dateObj.setDate(CURRENT_WEEK_MON.getDate()+d);
+      const dateStr=`${pad2(dateObj.getMonth()+1)}-${pad2(dateObj.getDate())}`;
+      dayEl.innerHTML = `<header><h2>${DAYS[d]} <span class="date">${dateStr}</span></h2></header>`;
+      const slotsEl=document.createElement('div'); slotsEl.className='slots';
+
+      for(const item of list){
+        const slotEl=document.createElement('div'); slotEl.className='slot';
+        slotEl.innerHTML = `<div class="time">${item.time}</div>`;
+        for(const ev of item.events){
+          const cat = ev.cat || (ev.type==='abyss'?'abyss':'raid');
+          const dg  = ev.dg  || (ev.type==='abyss'?'mas':(ev.type==='glas'?'glas':'succ'));
+          const diffCls = diffClass(ev.diff);
+          const full = (ev.members?.length||0) >= (ev.cap||4);
+          const host = ev.hostNick || (ev.members?.[0]?.nick || '파티');
+          const title = ev.title || `${host}의 파티`;
+          const isMine = !!(CURRENT_USER && (ev.members||[]).some(m=>m.uid===CURRENT_USER.uid));
+          const names = (ev.members||[]).map(m=>`<span class="chip">${escapeHtml(m.nick)}</span>`).join('') || '<span class="muted">(비어있음)</span>';
+          const evEl=document.createElement('div');
+          evEl.className = 'event' + (full?' full':'') + (isMine?' mine':'');
+          evEl.innerHTML = `
+            <div>
+              <div class="label">
+                <span class="badge ${cat==='abyss'?'cat-abyss':'cat-raid'}">${labelCat(cat)}</span>
+                <span class="badge ${dungeonClass(dg)}">${labelDungeon(dg)}</span>
+                <span class="badge diff ${diffCls}">${ev.diff}</span>
+                <span class="count">${(ev.members?.length||0)}/${ev.cap||4}</span>
+                ${isMine ? '<span class="badge mine">내 파티</span>' : ''}
+              </div>
+              <div class="title">${escapeHtml(title)}</div>
+              <div class="names">${names}</div>
+            </div>
+            <div class="btns">
+              <button class="btn-join">참가</button>
+              <button class="btn-leave">취소</button>
+            </div>`;
+          const joinBtn = evEl.querySelector('.btn-join');
+          const leaveBtn = evEl.querySelector('.btn-leave');
+          joinBtn.addEventListener('click', ()=>{
+            const nick=(nickEl.value||'').trim(); if(!nick){ alert('닉네임을 먼저 저장하세요.'); return; }
+            const sid = `${d}-${item.time}`; joinEvent(CURRENT_WEEK_ID, sid, ev.id, ev.cap||4);
+          });
+          leaveBtn.addEventListener('click', ()=>{ const sid = `${d}-${item.time}`; leaveEvent(CURRENT_WEEK_ID, sid); });
+          if(isMine){ joinBtn.disabled = true; joinBtn.style.opacity='0.6'; joinBtn.title='이미 참가한 파티입니다'; }
+          if(full && !isMine){ joinBtn.disabled = true; joinBtn.style.opacity='0.6'; joinBtn.title='정원이 가득 찼습니다'; }
+          if(ev.hostUid && CURRENT_USER && ev.hostUid===CURRENT_USER.uid){
+            const delBtn = document.createElement('button');
+            delBtn.className='btn-delete'; delBtn.textContent='삭제';
+            evEl.querySelector('.btns').appendChild(delBtn);
+            delBtn.addEventListener('click', ()=>{ const sid = `${d}-${item.time}`; deleteEvent(CURRENT_WEEK_ID, sid, ev.id); });
+          }
+          slotEl.appendChild(evEl);
+        }
+        slotsEl.appendChild(slotEl);
+      }
+      dayEl.appendChild(slotsEl);
+      eventsContainer.appendChild(dayEl);
     }
 
     // 안전한 HTML 이스케이프
