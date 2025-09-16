@@ -589,9 +589,17 @@
     }
 
     function escapeHtml(s){
-      return String(s||'').replace(/[&<>"']/g, c=>({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\u0027':'&#39;'
-      }[c]));
+      return String(s || '').replace(/[&<>"']/g, (ch) => {
+        switch (ch) {
+          case '&': return '&amp;';
+          case '<': return '&lt;';
+          case '>': return '&gt;';
+          case '"': return '&quot;';
+          case "'": return '&#39;';
+          default: return ch;
+        }
+      });
+    }[c]));
     }[c]));
     }[c]));
     }
