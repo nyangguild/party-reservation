@@ -284,6 +284,13 @@
     btnWeekPicker2.onclick = ()=> safeShow(weekStart2);
     btnDatePicker.onclick = ()=> safeShow(eventDateEl);
     btnTimePicker.onclick = ()=> safeShow(eventTimeEl);
+    // 시간 입력 5분 단위로 강제 스냅
+    eventTimeEl.setAttribute('step','300');
+    function snapTimeToStep(){
+      try{ eventTimeEl.value = normalizeTimeStr(eventTimeEl.value); }catch(_e){}
+    }
+    eventTimeEl.addEventListener('change', snapTimeToStep);
+    eventTimeEl.addEventListener('blur', snapTimeToStep);
 
     // ---------- 주간 이동 ----------
     goWeekBtn.onclick = ()=>{ const picked = weekStartEl.valueAsDate; if(!picked){ alert('날짜를 선택하세요.'); return; } setWeekByDate(picked); };
@@ -328,13 +335,25 @@
       }
     }
 
+    // 5분 단위 시간 정규화
+    function normalizeTimeStr(t){
+      if(!t || typeof t!=='string') return '20:00';
+      const parts = t.split(':');
+      let h = parseInt(parts[0]||'0',10); if(Number.isNaN(h)) h = 0;
+      let m = parseInt(parts[1]||'0',10); if(Number.isNaN(m)) m = 0;
+      const step = 5;
+      m = Math.round(m/step)*step;
+      if(m>=60){ m-=60; h=(h+1)%24; }
+      return `${pad2(h)}:${pad2(m)}`;
+    }
+
     // ---------- 파티 생성 ----------
     createEventBtn.onclick = async ()=>{
       const nick=(nickEl.value||'').trim(); if(!nick){ alert('닉네임을 먼저 저장하세요.'); return; }
       const sel = new Date(eventDateEl.value); sel.setHours(0,0,0,0);
       const dIdx = Math.floor((sel - CURRENT_WEEK_MON)/86400000);
       if(dIdx<0 || dIdx>6){ alert('선택한 날짜가 현재 주간(월~일) 범위를 벗어났습니다. 상단 ' + '해당 주 보기' + '로 주간을 먼저 맞춰주세요.'); return; }
-      const time = eventTimeEl.value || '20:00';
+      const time = normalizeTimeStr(eventTimeEl.value || '20:00');
       const cat = catEl.value; const dg = dungeonEl.value; const diff = eventDiffEl.value; const cap = CAP(dg);
       const sid = `${dIdx}-${time}`;
 
