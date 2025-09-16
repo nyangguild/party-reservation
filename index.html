@@ -143,6 +143,10 @@
       width:40px;min-width:40px;height:40px;flex:0 0 40px;
     }
   }
+  /* 모바일에서 '이번 주' 버튼 컴팩트 사이즈 */
+  @media (max-width:520px){
+    #goWeek2{ height:36px; padding:0 10px; font-size:13px; min-width:72px }
+  }
 </style>
   <meta name="theme-color" content="#0b0f14" />
   <!-- 카카오톡 미리보기(OG) -->
@@ -231,7 +235,7 @@
           <button id="prevWeek" class="picker-btn icon-btn" title="이전 주">◀</button>
           <input type="date" id="weekStart2" class="no-native-icon" />
           <button id="btnWeekPicker2" class="picker-btn icon-btn" title="날짜 선택">📅</button>
-          <button id="goWeek2" class="primary">이 주 보기</button>
+          <button id="goWeek2" class="primary">이번 주</button>
           <button id="nextWeek" class="picker-btn icon-btn" title="다음 주">▶</button>
           <span class="muted" id="weekLabel"></span>
         </div>
@@ -353,7 +357,7 @@
 
     // ---------- 주간 이동 ----------
     goWeekBtn.onclick = ()=>{ const picked = weekStartEl.valueAsDate; if(!picked){ alert('날짜를 선택하세요.'); return; } setWeekByDate(picked); };
-    goWeek2.onclick = ()=>{ const picked = weekStart2.valueAsDate; if(!picked){ alert('날짜를 선택하세요.'); return; } setWeekByDate(picked); };
+    goWeek2.onclick = ()=>{ setWeekByDate(todayInKST()); };
     prevWeek.onclick = ()=>{ const d=new Date(CURRENT_WEEK_MON); d.setDate(d.getDate()-7); setWeekByDate(d); };
     nextWeek.onclick = ()=>{ const d=new Date(CURRENT_WEEK_MON); d.setDate(d.getDate()+7); setWeekByDate(d); };
 
