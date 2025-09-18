@@ -87,6 +87,77 @@
       box-shadow:0 0 0 3px rgba(255,209,102,.35);
       border-color:#ffd166;
     }
+    /* === 배지 색상만 변경 (카테고리/던전/난이도) === */
+
+/* 카테고리 */
+.badge.cat-abyss{
+  background:#0e2236;
+  border-color:#295179;
+  color:#cfe6ff;
+}
+.badge.cat-raid{
+  background:#2a0e36;
+  border-color:#5a2979;
+  color:#f0d9ff;
+}
+
+/* 던전 */
+.badge.dg-mas{   /* 마스 던전 */
+  background:#162a1f;
+  border-color:#2b5d44;
+  color:#d7ffe9;
+}
+.badge.dg-glas{  /* 글라스기브넨 */
+  background:#2a1a1a;
+  border-color:#613636;
+  color:#ffdede;
+}
+.badge.dg-succ{  /* 서큐버스 */
+  background:#1f1a2a;
+  border-color:#3e3561;
+  color:#e6deff;
+}
+
+/* 난이도 공통 베이스 */
+.badge.diff{
+  background:#1b2431;
+  border-color:#2c3d52;
+}
+
+/* 난이도 단계 */
+.diff-easy{
+  background:#16301b;
+  border-color:#2e5d3f;
+  color:#d9ffe7;
+}
+.diff-hard{
+  background:#302716;
+  border-color:#6a541f;
+  color:#ffeec9;
+}
+.diff-veryhard{
+  background:#301616;
+  border-color:#6a2a2a;
+  color:#ffd9d9;
+}
+.diff-pink{
+  background:#2c1d27;
+  border-color:#5a2f4d;
+  color:#ffd8f0;
+}
+
+/* 주간 요약 스트립의 미니 배지(어비스/레이드)도 같은 팔레트로 */
+.ws-day .mini-badge.abyss{
+  background:#1f2a36;
+  border:1px solid #2f4259;
+  color:#cfe3ff;
+}
+.ws-day .mini-badge.raid{
+  background:#241f36;
+  border:1px solid #3a2f59;
+  color:#e2d6ff;
+}
+
   </style>
 </head>
 
@@ -1001,6 +1072,7 @@
         </script>
     </div>
 </body></html>
+
 
 
 
