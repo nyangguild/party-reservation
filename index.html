@@ -2,36 +2,92 @@
 <html lang="ko">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="title" content="냥슐랭 파티 예약판" />
-    <meta name="description" content="동시간대 최대 3파티·실시간 참가/취소·주간 보기" />
-    <title>냥슐랭 파티 예약판</title>
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="냥슐랭 파티 예약판" />
-    <meta property="og:description" content="동시간대 최대 3파티·실시간 참가/취소·주간 보기" />
-    <meta property="og:url" content="https://nyangguild.github.io/party-reservation/" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="title" content="냥슐랭 파티 예약판" />
+  <meta name="description" content="동시간대 최대 3파티·실시간 참가/취소·주간 보기" />
+  <title>냥슐랭 파티 예약판</title>
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="냥슐랭 파티 예약판" />
+  <meta property="og:description" content="동시간대 최대 3파티·실시간 참가/취소·주간 보기" />
+  <meta property="og:url" content="https://nyangguild.github.io/party-reservation/" />
 
-    <!-- 기존 CSS -->
-    <link rel="stylesheet" type="text/css" href="party.css" />
+  <!-- 기존 CSS -->
+  <link rel="stylesheet" type="text/css" href="party.css" />
 
-    <!-- 추가: 전체 배경만 어둡게 -->
-    <style>
-      body {
-        background: #2a2a2a;  /* 흰색 대신 짙은 회색 */
-        color: #111;          /* 기본 글씨 색상은 유지 */
-      }
-
-      /* 헤더 배경 흰빛 제거 */
-      .header {
-        background: transparent;
-      }
-
-      /* 카드 여백 대비 유지 */
-      .card {
-        background: #fff;   /* 카드 내부는 그대로 밝게 */
-      }
-    </style>
+  <!-- 여기: 다크 오버라이드 (당신이 붙여넣은 그대로) -->
+  <style id="dark-override">
+    :root{ color-scheme: dark; }
+    html, body { background:#0b0f14; color:#e6eef5; }
+    .muted, .hintTxt, .hint, .copy { color:#9bb0bf; }
+    a { color:#8ec1ff; }
+    .card { background:#111821; border:1px solid #1e2a36; box-shadow:0 6px 18px rgba(0,0,0,.45); }
+    .header h1 { color:#eaf2f9; }
+    .section-head .secTit, .secTit { color:#eaf2f9; }
+    input, select, .no-native-icon {
+      background:#0e141c; color:#e6eef5; border:1px solid #243140;
+      outline:none; border-radius:10px; padding:.6rem .7rem;
+    }
+    input::placeholder { color:#7e91a3; }
+    input:focus, select:focus { border-color:#3a7bd5; box-shadow:0 0 0 3px rgba(58,123,213,.25); }
+    button {
+      background:#1a2531; color:#e6eef5; border:1px solid #2a394a;
+      border-radius:10px; padding:.55rem .8rem; cursor:pointer;
+      transition:background .15s, border-color .15s, transform .02s;
+    }
+    button:hover { background:#202e3d; border-color:#3a4f64; }
+    button:active { transform:translateY(1px); }
+    .primary { background:#2a3e55; border-color:#3c5a7b; }
+    .primary:hover { background:#31506d; border-color:#50779e; }
+    .primary.success { background:#256b3f; border-color:#30945a; }
+    .primary.success:hover { background:#2b7b49; border-color:#3bb86f; }
+    .icon-btn, .picker-btn { background:#16202b; border-color:#263547; }
+    .icon-btn:hover, .picker-btn:hover { background:#1b2836; border-color:#33485f; }
+    .nameBox { background:#0e141c; border:1px solid #1f2a36; border-radius:12px; }
+    .nameBox input { background:transparent; border:none; }
+    .nameBox button { background:#2a3e55; border-color:#3c5a7b; }
+    .week-strip { background:#0e141c; border:1px solid #1f2a36; }
+    .ws-day { background:#0f1720; border:1px solid #1f2a36; color:#dfe8ef; }
+    .ws-day .date { color:#97a9b9; }
+    .ws-day .mini-badge.abyss { background:#1f2a36; border:1px solid #2f4259; color:#cfe3ff; }
+    .ws-day .mini-badge.raid  { background:#241f36; border:1px solid #3a2f59; color:#e2d6ff; }
+    .ws-day.mine { box-shadow:inset 0 0 0 2px #ffd16655; }
+    .ws-day.active { background:#142130; border-color:#3a7bd5; box-shadow:0 0 0 2px rgba(58,123,213,.35); }
+    .slots .slot { background:#0f1620; border:1px solid #1c2a38; }
+    .slots .time { color:#b9c8d6; }
+    .event { background:#121b27; border:1px solid #203041; }
+    .event.mine { border-color:#ffd166; box-shadow:0 0 0 2px #ffd16633; }
+    .event.full { opacity:.85; }
+    .title, .names .chip { color:#eaf2f9; }
+    .names .chip { background:#0e141c; border:1px solid #273547; }
+    .badge { background:#1a2431; color:#d9e6f2; border:1px solid #31465e; }
+    .badge.cat-abyss { background:#0e2236; border-color:#295179; color:#cfe6ff; }
+    .badge.cat-raid  { background:#2a0e36; border-color:#5a2979; color:#f0d9ff; }
+    .badge.dg-mas { background:#162a1f; border-color:#2b5d44; color:#d7ffe9; }
+    .badge.dg-glas { background:#2a1a1a; border-color:#613636; color:#ffdede; }
+    .badge.dg-succ { background:#1f1a2a; border-color:#3e3561; color:#e6deff; }
+    .badge.diff { background:#1b2431; border-color:#2c3d52; }
+    .diff-easy { background:#16301b; border-color:#2e5d3f; color:#d9ffe7; }
+    .diff-hard { background:#302716; border-color:#6a541f; color:#ffeec9; }
+    .diff-veryhard { background:#301616; border-color:#6a2a2a; color:#ffd9d9; }
+    .diff-pink { background:#2c1d27; border-color:#5a2f4d; color:#ffd8f0; }
+    .btn-join { background:#264a7a; border-color:#3a6aa5; }
+    .btn-join:hover { background:#2c588f; border-color:#4a80c3; }
+    .btn-leave { background:#2a1f1f; border-color:#5a3434; }
+    .btn-leave:hover { background:#342626; border-color:#7a4a4a; }
+    .btn-delete { background:#3a2323; border-color:#7a3a3a; color:#ffd9d9; }
+    .btn-delete:hover { background:#4a2b2b; border-color:#9a4e4e; }
+    .calrendarSet .dateBox, .setBox { background:#0e141c; border:1px solid #1f2a36; border-radius:12px; }
+    #weekLabel { color:#9bb0bf; }
+    .noData { color:#9bb0bf; background:#0e141c; border:1px dashed #2a394a; }
+    .ml-auto { margin-left:auto; }
+    .mobile-fullwidth { width:100%; }
+    [role="button"], button, input, select { outline: none; }
+    [role="button"]:focus, button:focus {
+      box-shadow:0 0 0 3px rgba(255,209,102,.35);
+      border-color:#ffd166;
+    }
+  </style>
 </head>
 
 <body>
@@ -945,5 +1001,6 @@
         </script>
     </div>
 </body></html>
+
 
 
